@@ -27,8 +27,7 @@ def main():
     loc = {}
     loc['sig']     = utils.makedir('/data/atlassmallfiles/users/zgubic/hmumu/v17/hadd')
     loc['data']    = utils.makedir('/data/atlassmallfiles/users/zgubic/hmumu/v17/hadd')
-    loc['ss_z']    = utils.makedir('/data/atlassmallfiles/users/zgubic/hmumu/spurious_signal/user.gartoni.Hmumu.SpuriousSignalStudies.MC15_Hmm_PowhegInclZ_TruthSamples.v01_di_muon_ntuple.root')
-    loc['ss_vbf']  = utils.makedir('/data/atlassmallfiles/users/zgubic/hmumu/spurious_signal/user.gartoni.Hmumu.SpuriousSignalStudies.MC15_Hmm_VBFZjNp2_TruthSamples.v01_di_muon_ntuple.root')
+    loc['ss']      = utils.makedir('/data/atlassmallfiles/users/zgubic/hmumu/spurious_signal')
 
     loc['out']     = utils.makedir('/data/atlassmallfiles/users/zgubic/hmumu/tf_ready/{}'.format(prod_name))
     loc['step1']   = utils.makedir(os.path.join(loc['out'], step1))
@@ -45,11 +44,10 @@ def main():
                      'data16.allYear.sideband.root',
                      'data17.allYear.sideband.root',
                      ]
-    fnames['ss_z'] = os.listdir(loc['ss_z'])
-    fnames['ss_vbf'] = os.listdir(loc['ss_vbf'])
+    fnames['ss'] = os.listdir(loc['ss'])
 
     # datasets to process
-    datasets = ['sig', 'data', 'ss_vbf', 'ss_z']
+    datasets = ['sig', 'data', 'ss']
 
     #####################
     # Step 1: Mass cut + selection
@@ -68,6 +66,7 @@ def main():
                 # run the selection
                 full_selection = 1 if dataset in ['sig', 'bkg', 'data'] else 0
                 is_signal = 1 if dataset in ['sig'] else 0
+
                 command = "root -l -q 'selection.cxx(\"{i}\", \"{o}\", {sel}, {sig})'".format(i=in_file, o=out_file, sel=full_selection, sig=is_signal)
                 os.system(command)
 
