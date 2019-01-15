@@ -42,6 +42,7 @@ void selection(std::string infile, std::string outfile, int full_selection, int 
   in_tree->SetBranchStatus("Muons_DeltaEta_MuMu", 1);
   in_tree->SetBranchStatus("Muons_DeltaPhi_MuMu", 1);
   in_tree->SetBranchStatus("Muons_DeltaR_MuMu", 1);
+  in_tree->SetBranchStatus("Jets_jetMultip", 1);
   in_tree->SetBranchStatus("Jets_E_Lead", 1);
   in_tree->SetBranchStatus("Jets_E_Sub", 1);
   in_tree->SetBranchStatus("Jets_PT_Lead", 1);
