@@ -1,10 +1,12 @@
 import os
+from datetime import datetime
 import fair_hmumu.utils as utils
 
 def main():
 
     # configurable
     prod_name = 'default'
+    prod_name = '{}_{}'.format(datetime.strftime(datetime.today(), '%Y%m%d'), prod_name)
 
     # other settings
     step1_name = 'step1'
@@ -38,7 +40,8 @@ def main():
 
 
     # loop over full analysis ntuples:
-    for dataset in ['sig', 'data', 'ss_vbf', 'ss_z']:
+    #for dataset in ['ss_vbf', 'sig', 'data', 'ss_vbf', 'ss_z']:
+    for dataset in ['ss_vbf']:
         for fname in fnames[dataset]:
 
             # input file
