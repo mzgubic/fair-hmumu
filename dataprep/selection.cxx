@@ -56,12 +56,18 @@ void selection(std::string infile, std::string outfile, int full_selection, int 
   in_tree->SetBranchStatus("Jets_DeltaEta_jj", 1);
   in_tree->SetBranchStatus("Jets_DeltaPhi_jj", 1);
   in_tree->SetBranchStatus("Jets_DeltaR_jj", 1);
-  std::string weight_name = ( full_selection ) ? "GlobalWeight" : "ExpWeight";
-  in_tree->SetBranchStatus(weight_name.c_str(), 1);
 
   //::: Prepare the new tree
   TFile *out_file = new TFile(outfile.c_str(), "recreate");
   TTree *out_tree = in_tree->CloneTree(0);
+
+  //::: Copy the weight and rename ExpWeight -> GlobalWeight. Branch rename is not possible, so:
+  //::: Turn on branch after Clone(), it shouldn't be copied, but we want access to the value.
+  std::string weight_name = ( full_selection ) ? "GlobalWeight" : "ExpWeight";
+  in_tree->SetBranchStatus(weight_name.c_str(), 1);
+  Float_t event_weight = 0;
+  in_tree->SetBranchAddress( weight_name.c_str(), &event_weight);
+  out_tree->Branch( "GlobalWeight", &event_weight, "GlobalWeight/F");
 
   //::: Loop over the tree, apply the cuts 
   for (Long64_t i=0; i<nentries; i++) {
