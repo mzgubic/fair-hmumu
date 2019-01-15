@@ -9,10 +9,11 @@ def main():
     prod_name = '{}_{}'.format(datetime.strftime(datetime.today(), '%Y%m%d'), prod_name)
 
     # other settings
-    step1_name = 'step1'
+    step1 = 'step1'
+    step2 = 'step2'
 
     #####################
-    # Step 1: Mass cut
+    # Step 1: Mass cut + selection
     #####################
 
     # prepare directories
@@ -23,6 +24,8 @@ def main():
     loc['ss_vbf']  = utils.makedir('/data/atlassmallfiles/users/zgubic/hmumu/spurious_signal/user.gartoni.Hmumu.SpuriousSignalStudies.MC15_Hmm_VBFZjNp2_TruthSamples.v01_di_muon_ntuple.root')
 
     loc['out']     = utils.makedir('/data/atlassmallfiles/users/zgubic/hmumu/tf_ready/{}'.format(prod_name))
+    loc['step1']   = utils.makedir(os.path.join(loc['out'], step1))
+    loc['step2']   = utils.makedir(os.path.join(loc['out'], step2))
 
     # get the file names
     fnames = {}
@@ -40,16 +43,16 @@ def main():
 
 
     # loop over full analysis ntuples:
-    #for dataset in ['ss_vbf', 'sig', 'data', 'ss_vbf', 'ss_z']:
-    for dataset in ['ss_vbf']:
+    datasets = ['sig', 'data', 'ss_vbf', 'ss_z']
+
+    for dataset in datasets:
         for fname in fnames[dataset]:
 
             # input file
             in_file = os.path.join(loc[dataset], fname)
 
             # output file
-            step1_outdir = utils.makedir(os.path.join(loc['out'], step1_name))
-            out_file = os.path.join(step1_outdir, fname)
+            out_file = os.path.join(loc[step1], fname)
 
             # run the selection
             full_selection = 1 if dataset in ['sig', 'bkg', 'data'] else 0
@@ -58,6 +61,22 @@ def main():
             os.system(command)
             break
         break
+
+    #####################
+    # Step 2: Hadd
+    #####################
+
+    for dataset in datasets:
+
+        # collect input files
+        in_files = [os.path.join(loc[step1], fname) for fname in fnames[dataset]]
+        out_file = os.path.join(loc[step2], dataset) + '.root'
+        command = 'hadd -f {} {}'.format(out_file, ' '.join(in_files))
+        os.system(command)
+        break
+
+
+
 
 if __name__ == '__main__':
     main()
