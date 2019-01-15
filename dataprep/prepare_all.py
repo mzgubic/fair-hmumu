@@ -4,19 +4,26 @@ import fair_hmumu.utils as utils
 
 def main():
 
-    # configurable
+    #####################
+    # Les configurables
+    #####################
+
     prod_name = 'default'
     prod_name = '{}_{}'.format(datetime.strftime(datetime.today(), '%Y%m%d'), prod_name)
 
     # other settings
+    do_step1 = True
+    do_step2 = True
+    do_step3 = False
+    do_step4 = False
     step1 = 'step1'
     step2 = 'step2'
+    step3 = 'step3'
 
     #####################
-    # Step 1: Mass cut + selection
+    # Prepare directories and files
     #####################
 
-    # prepare directories
     loc = {}
     loc['sig']     = utils.makedir('/data/atlassmallfiles/users/zgubic/hmumu/v17/hadd')
     loc['data']    = utils.makedir('/data/atlassmallfiles/users/zgubic/hmumu/v17/hadd')
@@ -41,39 +48,67 @@ def main():
     fnames['ss_z'] = os.listdir(loc['ss_z'])
     fnames['ss_vbf'] = os.listdir(loc['ss_vbf'])
 
-
-    # loop over full analysis ntuples:
+    # datasets to process
     datasets = ['sig', 'data', 'ss_vbf', 'ss_z']
 
-    for dataset in datasets:
-        for fname in fnames[dataset]:
+    #####################
+    # Step 1: Mass cut + selection
+    #####################
 
-            # input file
-            in_file = os.path.join(loc[dataset], fname)
-
-            # output file
-            out_file = os.path.join(loc[step1], fname)
-
-            # run the selection
-            full_selection = 1 if dataset in ['sig', 'bkg', 'data'] else 0
-            is_signal = 1 if dataset in ['sig'] else 0
-            command = "root -l -q 'selection.cxx(\"{i}\", \"{o}\", {sel}, {sig})'".format(i=in_file, o=out_file, sel=full_selection, sig=is_signal)
-            os.system(command)
-            break
-        break
+    if do_step1:
+        for dataset in datasets:
+            for fname in fnames[dataset]:
+    
+                # input file
+                in_file = os.path.join(loc[dataset], fname)
+    
+                # output file
+                out_file = os.path.join(loc[step1], fname)
+    
+                # run the selection
+                full_selection = 1 if dataset in ['sig', 'bkg', 'data'] else 0
+                is_signal = 1 if dataset in ['sig'] else 0
+                command = "root -l -q 'selection.cxx(\"{i}\", \"{o}\", {sel}, {sig})'".format(i=in_file, o=out_file, sel=full_selection, sig=is_signal)
+                os.system(command)
 
     #####################
     # Step 2: Hadd
     #####################
 
-    for dataset in datasets:
+    if do_step2:
+        for dataset in datasets:
 
-        # collect input files
-        in_files = [os.path.join(loc[step1], fname) for fname in fnames[dataset]]
-        out_file = os.path.join(loc[step2], dataset) + '.root'
-        command = 'hadd -f {} {}'.format(out_file, ' '.join(in_files))
-        os.system(command)
-        break
+            # collect input files
+            in_files = [os.path.join(loc[step1], fname) for fname in fnames[dataset]]
+
+            # hadded file
+            out_file = os.path.join(loc[step2], dataset) + '.root'
+
+            # hadd them
+            command = 'hadd -f {} {}'.format(out_file, ' '.join(in_files))
+            os.system(command)
+
+    #####################
+    # Step 3: Split in jet categories
+    #####################
+
+    if do_step3:
+        for dataset in datasets:
+
+            # hadded file
+            hadd_file = os.path.join(loc[step2], '{}.root'.format(dataset))
+
+            # split in 0, 1, 2+ jet datasets (separate trees inside)
+            split_file = os.path.join(loc[step3], '{}.root'.format(dataset))
+
+            # run the macro to make new trees
+            command = "root -l -q 'njet_split.cxx(\"{i}\", \"{o}\")'".format(i=in_file, o=split_file)
+            os.system(command)
+            break
+
+    #####################
+    # Step 4: Shuffle Z and VBF entries
+    #####################
 
 
 
