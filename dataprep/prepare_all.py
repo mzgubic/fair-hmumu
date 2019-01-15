@@ -14,7 +14,7 @@ def main():
     # other settings
     do_step1 = True
     do_step2 = True
-    do_step3 = False
+    do_step3 = True
     do_step4 = False
     step1 = 'step1'
     step2 = 'step2'
@@ -32,6 +32,7 @@ def main():
     loc['out']     = utils.makedir('/data/atlassmallfiles/users/zgubic/hmumu/tf_ready/{}'.format(prod_name))
     loc['step1']   = utils.makedir(os.path.join(loc['out'], step1))
     loc['step2']   = utils.makedir(os.path.join(loc['out'], step2))
+    loc['step3']   = utils.makedir(os.path.join(loc['out'], step3))
 
     # get the file names
     fnames = {}
@@ -101,9 +102,8 @@ def main():
             split_file = os.path.join(loc[step3], '{}.root'.format(dataset))
 
             # run the macro to make new trees
-            command = "root -l -q 'njet_split.cxx(\"{i}\", \"{o}\")'".format(i=in_file, o=split_file)
+            command = "root -l -q 'njet_split.cxx(\"{i}\", \"{o}\")'".format(i=hadd_file, o=split_file)
             os.system(command)
-            break
 
     #####################
     # Step 4: Shuffle Z and VBF entries
