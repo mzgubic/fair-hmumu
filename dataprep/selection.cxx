@@ -61,7 +61,7 @@ void selection(std::string infile, std::string outfile, int full_selection, int 
   TFile *out_file = new TFile(outfile.c_str(), "recreate");
   TTree *out_tree = in_tree->CloneTree(0);
 
-  //::: Rename the new tree if needed
+  //::: Set the same name for all trees
   out_tree->SetName("DiMuonNtuple");
 
   //::: Copy the weight and rename ExpWeight -> GlobalWeight. Branch rename is not possible, so:
@@ -70,7 +70,10 @@ void selection(std::string infile, std::string outfile, int full_selection, int 
   in_tree->SetBranchStatus(weight_name.c_str(), 1);
   Float_t event_weight = 0;
   in_tree->SetBranchAddress( weight_name.c_str(), &event_weight);
-  out_tree->Branch( "GlobalWeight", &event_weight, "GlobalWeight/F");
+  out_tree->Branch("GlobalWeight", &event_weight, "GlobalWeight/F");
+
+  //::: Add a new column, IsSignal
+  out_tree->Branch("IsSignal", &is_signal, "IsSignal/I");
 
   //::: Loop over the tree, apply the cuts 
   for (Long64_t i=0; i<nentries; i++) {
