@@ -61,6 +61,9 @@ void selection(std::string infile, std::string outfile, int full_selection, int 
   TFile *out_file = new TFile(outfile.c_str(), "recreate");
   TTree *out_tree = in_tree->CloneTree(0);
 
+  //::: Rename the new tree if needed
+  out_tree->SetName("DiMuonNtuple");
+
   //::: Copy the weight and rename ExpWeight -> GlobalWeight. Branch rename is not possible, so:
   //::: Turn on branch after Clone(), it shouldn't be copied, but we want access to the value.
   std::string weight_name = ( full_selection ) ? "GlobalWeight" : "ExpWeight";
