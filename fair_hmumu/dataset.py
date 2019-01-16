@@ -25,8 +25,6 @@ class DatasetHandler:
         self.entrystop = entrystop
         self.seed = seed
         self.test_frac = test_frac
-        self.datasets = ['sig', 'data', 'ss']
-        self.njets = ['0jet', '1jet', '2jet']
         
         # set up
         self._load()
@@ -36,9 +34,9 @@ class DatasetHandler:
 
         print('--- Loading the datasets')
 
-        self.df = {ds:{njet:{} for njet in self.njets} for ds in self.datasets}
+        self.df = {ds:{njet:{} for njet in defs.channels} for ds in defs.datasets}
 
-        for dataset, njet in itertools.product(self.datasets, self.njets):
+        for dataset, njet in itertools.product(defs.datasets, defs.channels):
 
             # get the tree
             fname = '{}/{}.root'.format(self.loc, dataset)
@@ -55,7 +53,7 @@ class DatasetHandler:
 
         print('--- Splitting into training and test sets')
 
-        for dataset, njet in itertools.product(self.datasets, self.njets):
+        for dataset, njet in itertools.product(defs.datasets, defs.channels):
 
             # get the training and test set indices
             nentries = self.df[dataset][njet]['full'].shape[0]
@@ -83,8 +81,8 @@ class DatasetHandler:
         Get the entire training set.
         """
         # fetch components
-        sig = self.df['sig'][njet]['train']
-        data = self.df['data'][njet]['train']
+        sig = self.df[defs.sig][njet]['train']
+        data = self.df[defs.data][njet]['train']
 
         # concatenate and reshuffle
         result = pd.concat([sig, data])

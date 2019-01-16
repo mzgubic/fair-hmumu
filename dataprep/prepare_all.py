@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 import root_pandas as rpd
 import fair_hmumu.utils as utils
+import fair_hmumu.defs as defs
 
 def main():
 
@@ -13,47 +14,45 @@ def main():
     prod_name = '{}_{}'.format(datetime.strftime(datetime.today(), '%Y%m%d'), prod_name)
 
     # other settings
-    do_steps = [1,2,3,4]
+    do_steps = [1, 2, 3, 4]
     step1 = 'step1'
     step2 = 'step2'
     step3 = 'step3'
+    out = 'out'
 
     #####################
     # Prepare directories and files
     #####################
 
     loc = {}
-    loc['sig']     = utils.makedir('/data/atlassmallfiles/users/zgubic/hmumu/v17/hadd')
-    loc['data']    = utils.makedir('/data/atlassmallfiles/users/zgubic/hmumu/v17/hadd')
-    loc['ss']      = utils.makedir('/data/atlassmallfiles/users/zgubic/hmumu/spurious_signal')
+    loc[defs.sig]     = utils.makedir('/data/atlassmallfiles/users/zgubic/hmumu/v17/hadd')
+    loc[defs.data]    = utils.makedir('/data/atlassmallfiles/users/zgubic/hmumu/v17/hadd')
+    loc[defs.ss]      = utils.makedir('/data/atlassmallfiles/users/zgubic/hmumu/spurious_signal')
 
-    loc['out']     = utils.makedir(os.path.join(os.getenv('DATA'), prod_name))
-    loc['step1']   = utils.makedir(os.path.join(loc['out'], step1))
-    loc['step2']   = utils.makedir(os.path.join(loc['out'], step2))
-    loc['step3']   = utils.makedir(os.path.join(loc['out'], step3))
+    loc[out]     = utils.makedir(os.path.join(os.getenv('DATA'), prod_name))
+    loc[step1]   = utils.makedir(os.path.join(loc[out], step1))
+    loc[step2]   = utils.makedir(os.path.join(loc[out], step2))
+    loc[step3]   = utils.makedir(os.path.join(loc[out], step3))
 
     # get the file names
     fnames = {}
-    fnames['sig'] = ['mc16a.345097.root',
+    fnames[defs.sig] = ['mc16a.345097.root',
                     'mc16d.345097.root',
                     'mc16a.345106.root',
                     'mc16d.345106.root',
                     ]
-    fnames['data'] = ['data15.allYear.sideband.root',
+    fnames[defs.data] = ['data15.allYear.sideband.root',
                      'data16.allYear.sideband.root',
                      'data17.allYear.sideband.root',
                      ]
-    fnames['ss'] = os.listdir(loc['ss'])
-
-    # datasets to process
-    datasets = ['sig', 'data', 'ss']
+    fnames[defs.ss] = os.listdir(loc[defs.ss])
 
     #####################
     # Step 1: Mass cut + selection
     #####################
 
     if 1 in do_steps:
-        for dataset in datasets:
+        for dataset in defs.datasets:
             for fname in fnames[dataset]:
     
                 # input file
@@ -63,8 +62,8 @@ def main():
                 out_file = os.path.join(loc[step1], fname)
     
                 # run the selection
-                full_selection = 1 if dataset in ['sig', 'bkg', 'data'] else 0
-                is_signal = 1 if dataset in ['sig'] else 0
+                full_selection = 1 if dataset in [defs.sig, defs.data] else 0
+                is_signal = 1 if dataset in [defs.sig] else 0
 
                 command = "root -l -q 'selection.cxx(\"{i}\", \"{o}\", {sel}, {sig})'".format(i=in_file, o=out_file, sel=full_selection, sig=is_signal)
                 os.system(command)
@@ -74,7 +73,7 @@ def main():
     #####################
 
     if 2 in do_steps:
-        for dataset in datasets:
+        for dataset in defs.datasets:
 
             # collect input files
             in_files = [os.path.join(loc[step1], fname) for fname in fnames[dataset]]
@@ -91,7 +90,7 @@ def main():
     #####################
 
     if 3 in do_steps:
-        for dataset in datasets:
+        for dataset in defs.datasets:
 
             # hadded file
             hadd_file = os.path.join(loc[step2], '{}.root'.format(dataset))
@@ -107,11 +106,9 @@ def main():
     # Step 4: Shuffle the entries
     #####################
 
-    trees = ['0jet', '1jet', '2jet']
-
     if 4 in do_steps:
-        for dataset in datasets:
-            for tree in trees:
+        for dataset in defs.datasets:
+            for tree in defs.channels:
             
                 # read the dataframes
                 in_file = os.path.join(loc[step3], '{}.root'.format(dataset))
@@ -121,8 +118,8 @@ def main():
                 df = df.sample(frac=1).reset_index(drop=True)
 
                 # and write it
-                out_file = os.path.join(loc['out'], '{}.root'.format(dataset))
-                mode = 'w' if tree == trees[0] else 'a'
+                out_file = os.path.join(loc[out], '{}.root'.format(dataset))
+                mode = 'w' if tree == defs.channels[0] else 'a'
                 df.to_root(out_file, key=tree, mode=mode)
 
 
