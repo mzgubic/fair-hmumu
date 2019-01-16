@@ -76,10 +76,12 @@ class DatasetHandler:
 
         return X, Y, Z, W
 
-    def full_train(self, njet):
+    def get_train(self, njet):
         """
         Get the entire training set.
         """
+        print('--- Fetching full training set')
+
         # fetch components
         sig = self.df[defs.sig][njet]['train']
         data = self.df[defs.data][njet]['train']
@@ -90,6 +92,77 @@ class DatasetHandler:
 
         return self._xyzw(result)
 
+    def get_test(self, njet):
+        """
+        Get the entire test set.
+        """
+        print('--- Fetching full test set')
+
+        # fetch components
+        sig = self.df[defs.sig][njet]['test']
+        data = self.df[defs.data][njet]['test']
+
+        # concatenate and reshuffle
+        result = pd.concat([sig, data])
+        result = result.sample(frac=1).reset_index(drop=True)
+
+        return self._xyzw(result)
+
+    def get_ss(self, njet, nentries=None):
+        """
+        Get nentries events from spurious signal data.
+        """
+
+        # fetch full ds
+        df = self.df[defs.ss][njet]['full']
+
+        # num entries in df
+        all_entries = df.shape[0]
+
+        # how many to fetch
+        if nentries == None or nentries < 0:
+            nentries == all_entries
+        else:
+            nentries = min(nentries, all_entries)
+
+        print('--- Fetching {}/{} spurious signal events.'.format(nentries, all_entries))
+
+        return self._xyzw(df.iloc[:nentries])
+
+    def get_batch(self, njet, batchsize=512):
+        """
+        Get a balanced batch of randomly sampled training data.
+        """
+        assert batchsize % 2 == 0, "batchsize must be even"
+
+        # fetch signal and background events
+        sig = self.df[defs.sig][njet]['train']
+        data = self.df[defs.data][njet]['train']
+
+        # sample half batchsize from each
+        neach = int(batchsize/2.)
+        sig_inds = np.random.randint(sig.shape[0], size=neach)
+        data_inds = np.random.randint(data.shape[0], size=neach)
+
+        sig = sig.iloc[sig_inds].copy()
+        data = data.iloc[data_inds].copy()
+
+        # normalise weights
+        sig.loc[:, defs.weight] = sig.loc[:, defs.weight] * (neach / np.sum(sig.loc[:, defs.weight]))
+        data.loc[:, defs.weight] = data.loc[:, defs.weight] * (neach / np.sum(data.loc[:, defs.weight]))
+
+        # concatenate and reshuffle
+        result = pd.concat([sig, data])
+        result = result.sample(frac=1).reset_index(drop=True)
+
+        return self._xyzw(result)
+
+
+
+
+
+
+
 
 
 
@@ -97,7 +170,9 @@ production = '20190116_default'
 features = ['Muons_PT_Lead', 'Muons_PT_Sub']
 entrystop=10
 dh = DatasetHandler(production, features, entrystop=entrystop)
-dh.full_train(defs.jet0)
-dh.full_test(defs.jet0)
+dh.get_train(defs.jet0)
+dh.get_test(defs.jet0)
+dh.get_ss(defs.jet0, 20)
+dh.get_batch(defs.jet0, 8)
 
 
