@@ -74,11 +74,10 @@ class Configuration:
         return ret[:-1]
 
 
-conf = Configuration('test.ini')
+conf = Configuration('../examples/one_run_conf.ini.example')
 conf.read()
 print(conf.get('Adversary', 'type'))
 conf.set('Adversary', 'type', 'GaussMixNLL')
 print(conf.get('Adversary', 'type'))
 conf.write()
-
 print(conf.get('Adversary'))
