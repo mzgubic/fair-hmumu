@@ -3,7 +3,7 @@ import itertools
 import numpy as np
 import uproot as ur
 import pandas as pd
-
+import defs
 
 class DatasetHandler:
 
@@ -20,7 +20,8 @@ class DatasetHandler:
         # settings
         self.production = production
         self.loc = os.path.join(os.getenv('DATA'), production)
-        self.features = features
+        self.features = list(features)
+        self.branches = list(features) + [defs.target, defs.mass, defs.weight]
         self.entrystop = entrystop
         self.seed = seed
         self.test_frac = test_frac
@@ -44,7 +45,7 @@ class DatasetHandler:
             tree = ur.open(fname)[njet]
 
             # get the array
-            arrays = tree.arrays(branches=self.features, entrystop=self.entrystop)
+            arrays = tree.arrays(branches=self.branches, entrystop=self.entrystop)
 
             # convert it to a DataFrame and decode column names to strings
             self.df[dataset][njet]['full'] = pd.DataFrame(arrays)
@@ -68,9 +69,36 @@ class DatasetHandler:
             self.df[dataset][njet]['train'] = self.df[dataset][njet]['full'].iloc[ind_train]
             self.df[dataset][njet]['test'] = self.df[dataset][njet]['full'].iloc[ind_test]
 
+    def _xyzw(self, df):
+
+        X = df[self.features].values
+        Y = df[defs.target].values
+        Z = df[defs.mass].values
+        W = df[defs.weight].values
+
+        return X, Y, Z, W
+
+    def full_train(self, njet):
+        """
+        Get the entire training set.
+        """
+        # fetch components
+        sig = self.df['sig'][njet]['train']
+        data = self.df['data'][njet]['train']
+
+        # concatenate and reshuffle
+        result = pd.concat([sig, data])
+        result = result.sample(frac=1).reset_index(drop=True)
+
+        return self._xyzw(result)
+
+
 
 
 production = '20190116_default'
 features = ['Muons_PT_Lead', 'Muons_PT_Sub']
 entrystop=10
 dh = DatasetHandler(production, features, entrystop=entrystop)
+dh.full_train('0jet')
+
+
