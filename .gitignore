@@ -1,3 +1,6 @@
+# configuration files
+*.ini
+
 # virtualenv
 bin/
 lib64
