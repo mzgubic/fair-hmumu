@@ -15,14 +15,29 @@ class Configuration:
         # parser
         self.config = configparser.ConfigParser()
 
-    def get(self, section, option):
+    def get_dict(self, section):
+        """
+        Get the section settings as a dict, with types already converted.
+        """
+
+    def get(self, section, option=None):
         """
         Handle types other than strings.
         """
-        try:
-            return ast.literal_eval(self.config.get(section, option))
-        except ValueError:
-            return self.config.get(section, option)
+
+        # if only section is provided return a dict
+        if option == None:
+            d = {}
+            for option in self.config.options(section):
+                d[option] = self.get(section, option)
+            return d
+                
+        # if section and option are provided return the option value
+        else:
+            try:
+                return ast.literal_eval(self.config.get(section, option))
+            except ValueError:
+                return self.config.get(section, option)
 
     def set(self, section, option, value):
         """
@@ -66,4 +81,4 @@ conf.set('Adversary', 'type', 'GaussMixNLL')
 print(conf.get('Adversary', 'type'))
 conf.write()
 
-print(conf)
+print(conf.get('Adversary'))
