@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+import root_pandas as rpd
 import fair_hmumu.utils as utils
 
 def main():
@@ -12,10 +13,10 @@ def main():
     prod_name = '{}_{}'.format(datetime.strftime(datetime.today(), '%Y%m%d'), prod_name)
 
     # other settings
-    do_step1 = True
-    do_step2 = True
-    do_step3 = True
-    do_step4 = False
+    do_step1 = False
+    do_step2 = False
+    do_step3 = False
+    do_step4 = True
     step1 = 'step1'
     step2 = 'step2'
     step3 = 'step3'
@@ -106,10 +107,25 @@ def main():
             os.system(command)
 
     #####################
-    # Step 4: Shuffle Z and VBF entries
+    # Step 4: Shuffle the entries
     #####################
 
+    trees = ['0jet', '1jet', '2jet']
+    if do_step4:
+        for dataset in datasets:
+            for tree in trees:
+            
+                # read the dataframes
+                in_file = os.path.join(loc[step3], '{}.root'.format(dataset))
+                df = rpd.read_root(in_file, key=tree)
 
+                # shuffle the tree
+                df = df.sample(frac=1).reset_index(drop=True)
+
+                # and write it
+                out_file = os.path.join(loc['out'], '{}.root'.format(dataset))
+                mode = 'w' if tree == trees[0] else 'a'
+                df.to_root(out_file, key=tree, mode=mode)
 
 
 if __name__ == '__main__':
