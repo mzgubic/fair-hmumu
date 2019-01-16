@@ -27,7 +27,7 @@ def main():
     loc['data']    = utils.makedir('/data/atlassmallfiles/users/zgubic/hmumu/v17/hadd')
     loc['ss']      = utils.makedir('/data/atlassmallfiles/users/zgubic/hmumu/spurious_signal')
 
-    loc['out']     = utils.makedir('/data/atlassmallfiles/users/zgubic/hmumu/tf_ready/{}'.format(prod_name))
+    loc['out']     = utils.makedir(os.path.join(os.getenv('DATA'), prod_name))
     loc['step1']   = utils.makedir(os.path.join(loc['out'], step1))
     loc['step2']   = utils.makedir(os.path.join(loc['out'], step2))
     loc['step3']   = utils.makedir(os.path.join(loc['out'], step3))
