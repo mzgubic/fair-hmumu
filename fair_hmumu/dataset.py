@@ -158,21 +158,3 @@ class DatasetHandler:
         return self._xyzw(result)
 
 
-
-
-
-
-
-
-
-
-production = '20190116_default'
-features = ['Muons_PT_Lead', 'Muons_PT_Sub']
-entrystop=10
-dh = DatasetHandler(production, features, entrystop=entrystop)
-dh.get_train(defs.jet0)
-dh.get_test(defs.jet0)
-dh.get_ss(defs.jet0, 20)
-dh.get_batch(defs.jet0, 8)
-
-
