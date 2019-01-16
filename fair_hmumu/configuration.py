@@ -42,6 +42,22 @@ class Configuration:
         with open(self.path, 'w') as f:
             self.config.write(f)
 
+    def __str__(self):
+        
+        ret = '\n'
+        for section in self.config:
+            
+            # skip default
+            if section == 'DEFAULT': continue
+
+            # write a section
+            ret += '[{}]\n'.format(section)
+            for option in self.config.options(section):
+                ret += '{} = {}\n'.format(option, self.config[section][option])
+            ret += '\n'
+
+        return ret[:-1]
+
 
 conf = Configuration('test.ini')
 conf.read()
@@ -49,3 +65,5 @@ print(conf.get('Adversary', 'type'))
 conf.set('Adversary', 'type', 'GaussMixNLL')
 print(conf.get('Adversary', 'type'))
 conf.write()
+
+print(conf)
