@@ -97,6 +97,7 @@ production = '20190116_default'
 features = ['Muons_PT_Lead', 'Muons_PT_Sub']
 entrystop=10
 dh = DatasetHandler(production, features, entrystop=entrystop)
-dh.full_train('0jet')
+dh.full_train(defs.jet0)
+dh.full_test(defs.jet0)
 
 

@@ -5,9 +5,12 @@ mass = 'Muons_Minv_MuMu'
 weight = 'GlobalWeight'
 
 # channels and datasets
-channels = ['0jet', '1jet', '2jet']
-datasets = ['sig', 'data', 'ss']
+jet0 = 'jet0'
+jet1 = 'jet1'
+jet2 = 'jet2'
+channels = [jet0, jet1, jet2]
 sig = 'sig'
 data = 'data'
 ss = 'ss'
+datasets = [sig, data, ss]
 
