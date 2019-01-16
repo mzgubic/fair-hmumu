@@ -1,12 +1,13 @@
 import os
 import itertools
+import numpy as np
 import uproot as ur
 import pandas as pd
 
 
 class DatasetHandler:
 
-    def __init__(self, production, features, entrystop=1000):
+    def __init__(self, production, features, entrystop=1000, seed=42):
         """
         Dataset handler. Split in training and test sets, get training batches.
 
@@ -21,17 +22,20 @@ class DatasetHandler:
         self.loc = os.path.join(os.getenv('DATA'), production)
         self.features = features
         self.entrystop = entrystop
+        self.seed = seed
         self.datasets = ['sig', 'data', 'ss']
         self.njets = ['0jet', '1jet', '2jet']
         
         # set up
-        self._setup()
+        self._load()
+        self._split()
 
-    def _setup(self):
-
-        self.df = {ds:{} for ds in self.datasets}
+    def _load(self):
 
         print('--- Loading the datasets')
+
+        self.df = {ds:{njet:{} for njet in self.njets} for ds in self.datasets}
+
         for dataset, njet in itertools.product(self.datasets, self.njets):
 
             # get the tree
@@ -42,14 +46,35 @@ class DatasetHandler:
             arrays = tree.arrays(branches=self.features, entrystop=self.entrystop)
 
             # convert it to a DataFrame and decode column names to strings
-            self.df[dataset][njet] = pd.DataFrame(arrays)
-            self.df[dataset][njet].columns = [feature.decode('utf-8') for feature in self.df[dataset][njet].columns]
+            self.df[dataset][njet]['full'] = pd.DataFrame(arrays)
+            self.df[dataset][njet]['full'].columns = [feature.decode('utf-8') for feature in self.df[dataset][njet]['full'].columns]
 
-        
+    def _split(self):
+
+        print('--- Splitting into training and test sets')
+
+        for dataset, njet in itertools.product(self.datasets, self.njets):
+
+            # get the training and test set indices
+            nentries = self.df[dataset][njet]['full'].shape[0]
+            indices = np.arange(nentries)
+            np.random.shuffle(indices)
+            test_frac = 0.25
+            split_at = int(test_frac*nentries)
+            ind_train, ind_test = indices[split_at:], indices[:split_at]
+
+            # split
+            self.df[dataset][njet]['train'] = self.df[dataset][njet]['full'].iloc[ind_train]
+            self.df[dataset][njet]['test'] = self.df[dataset][njet]['full'].iloc[ind_test]
+
+            print()
+            print(self.df[dataset][njet]['full'])
+            print(self.df[dataset][njet]['test'])
+            print(self.df[dataset][njet]['train'])
 
 
-        
 
 production = '20190116_default'
 features = ['Muons_PT_Lead', 'Muons_PT_Sub']
-dh = DatasetHandler(production, features)
+entrystop=10
+dh = DatasetHandler(production, features, entrystop=entrystop)
