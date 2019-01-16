@@ -31,6 +31,7 @@ void selection(std::string infile, std::string outfile, int full_selection, int 
   in_tree->SetBranchStatus("*", 0);
 
   // Turn these branches on
+  in_tree->SetBranchStatus("EventInfo_EventNumber", 1);
   in_tree->SetBranchStatus("Muons_PT_Lead", 1);
   in_tree->SetBranchStatus("Muons_PT_Sub", 1);
   in_tree->SetBranchStatus("Muons_Eta_Lead", 1);
