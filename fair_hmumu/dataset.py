@@ -7,7 +7,7 @@ import pandas as pd
 
 class DatasetHandler:
 
-    def __init__(self, production, features, entrystop=1000, seed=42):
+    def __init__(self, production, features, entrystop=1000, test_frac=0.25, seed=42):
         """
         Dataset handler. Split in training and test sets, get training batches.
 
@@ -23,6 +23,7 @@ class DatasetHandler:
         self.features = features
         self.entrystop = entrystop
         self.seed = seed
+        self.test_frac = test_frac
         self.datasets = ['sig', 'data', 'ss']
         self.njets = ['0jet', '1jet', '2jet']
         
@@ -58,19 +59,14 @@ class DatasetHandler:
             # get the training and test set indices
             nentries = self.df[dataset][njet]['full'].shape[0]
             indices = np.arange(nentries)
+            np.random.seed(self.seed)
             np.random.shuffle(indices)
-            test_frac = 0.25
-            split_at = int(test_frac*nentries)
+            split_at = int(self.test_frac*nentries)
             ind_train, ind_test = indices[split_at:], indices[:split_at]
 
             # split
             self.df[dataset][njet]['train'] = self.df[dataset][njet]['full'].iloc[ind_train]
             self.df[dataset][njet]['test'] = self.df[dataset][njet]['full'].iloc[ind_test]
-
-            print()
-            print(self.df[dataset][njet]['full'])
-            print(self.df[dataset][njet]['test'])
-            print(self.df[dataset][njet]['train'])
 
 
 
