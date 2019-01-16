@@ -56,6 +56,9 @@ void selection(std::string infile, std::string outfile, int full_selection, int 
   in_tree->SetBranchStatus("Jets_DeltaEta_jj", 1);
   in_tree->SetBranchStatus("Jets_DeltaPhi_jj", 1);
   in_tree->SetBranchStatus("Jets_DeltaR_jj", 1);
+  if ( full_selection ) { // copy for analysis ntuples, change to Int_t for SS ntuples
+    in_tree->SetBranchStatus("Jets_jetMultip", 1);
+  }
 
   //::: Prepare the new tree
   TFile *out_file = new TFile(outfile.c_str(), "recreate");
@@ -73,10 +76,13 @@ void selection(std::string infile, std::string outfile, int full_selection, int 
   out_tree->Branch("GlobalWeight", &event_weight, "GlobalWeight/F");
 
   //::: Similarly spurious signal files have jet multiplicity stored as a float: change to int
-  in_tree->SetBranchStatus("Jets_jetMultip", 1);
-  Int_t njets = 0;
-  in_tree->SetBranchAddress("Jets_jetMultip", &njets);
-  out_tree->Branch("Jets_jetMultip", &njets, "Jets_jetMultip/I");
+  Int_t njets_Int = 0;
+  Float_t njets_Float = 0;
+  if ( !full_selection ) {
+    in_tree->SetBranchStatus("Jets_jetMultip", 1);
+    in_tree->SetBranchAddress("Jets_jetMultip", &njets_Float);
+    out_tree->Branch("Jets_jetMultip", &njets_Int, "Jets_jetMultip/I");
+  }
 
   //::: Add a new column, IsSignal
   out_tree->Branch("IsSignal", &is_signal, "IsSignal/I");
@@ -95,6 +101,7 @@ void selection(std::string infile, std::string outfile, int full_selection, int 
         }
         // or not
         else {
+          njets_Int = njets_Float;
           out_tree->Fill();
         }
 
