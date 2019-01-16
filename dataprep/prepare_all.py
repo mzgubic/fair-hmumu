@@ -13,10 +13,7 @@ def main():
     prod_name = '{}_{}'.format(datetime.strftime(datetime.today(), '%Y%m%d'), prod_name)
 
     # other settings
-    do_step1 = False
-    do_step2 = False
-    do_step3 = False
-    do_step4 = True
+    do_steps = [1,2,3,4]
     step1 = 'step1'
     step2 = 'step2'
     step3 = 'step3'
@@ -55,7 +52,7 @@ def main():
     # Step 1: Mass cut + selection
     #####################
 
-    if do_step1:
+    if 1 in do_steps:
         for dataset in datasets:
             for fname in fnames[dataset]:
     
@@ -76,7 +73,7 @@ def main():
     # Step 2: Hadd
     #####################
 
-    if do_step2:
+    if 2 in do_steps:
         for dataset in datasets:
 
             # collect input files
@@ -93,7 +90,7 @@ def main():
     # Step 3: Split in jet categories
     #####################
 
-    if do_step3:
+    if 3 in do_steps:
         for dataset in datasets:
 
             # hadded file
@@ -111,7 +108,8 @@ def main():
     #####################
 
     trees = ['0jet', '1jet', '2jet']
-    if do_step4:
+
+    if 4 in do_steps:
         for dataset in datasets:
             for tree in trees:
             

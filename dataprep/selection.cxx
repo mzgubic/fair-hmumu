@@ -12,11 +12,15 @@ void selection(std::string infile, std::string outfile, int full_selection, int 
   Float_t leadeta = 0;
   Float_t subeta = 0;
   Float_t met = 0;
+  Float_t leadpt = 0;
+  Float_t subpt = 0;
   Int_t hasbjet = 0;
   Int_t nmuons = 0;
   in_tree->SetBranchAddress("Muons_Minv_MuMu", &dimuon_mass);
   in_tree->SetBranchAddress("Muons_Eta_Lead", &leadeta);
   in_tree->SetBranchAddress("Muons_Eta_Sub", &subeta);
+  in_tree->SetBranchAddress("Muons_PT_Lead", &leadpt);
+  in_tree->SetBranchAddress("Muons_PT_Sub", &subpt);
   if ( full_selection ) {
     in_tree->SetBranchAddress("Event_MET", &met);
     in_tree->SetBranchAddress("Event_HasBJet", &hasbjet);
@@ -84,6 +88,11 @@ void selection(std::string infile, std::string outfile, int full_selection, int 
     out_tree->Branch("Jets_jetMultip", &njets_Int, "Jets_jetMultip/I");
   }
 
+  //::: Add new branches (Wisconsin)
+  Float_t leadptm, subptm;
+  out_tree->Branch("Muons_PTM_Lead", &leadptm, "Muons_PTM_Lead/F");
+  out_tree->Branch("Muons_PTM_Sub", &subptm, "Muons_PTM_Sub/F");
+
   //::: Add a new column, IsSignal
   out_tree->Branch("IsSignal", &is_signal, "IsSignal/I");
 
@@ -92,6 +101,10 @@ void selection(std::string infile, std::string outfile, int full_selection, int 
     in_tree->GetEntry(i);
     if ( dimuon_mass > 110 && dimuon_mass < 160 ) {
       if ( abs(leadeta) < 2.5 && abs(subeta) < 2.5 ) {
+
+        // compute the new variables
+        leadptm = leadpt/dimuon_mass;
+        subptm = subpt/dimuon_mass;
 
         // apply full selection
         if ( full_selection ) {
