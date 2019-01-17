@@ -1,8 +1,7 @@
 import os
 import argparse
-import fair_hmumu.utils as utils
-import fair_hmumu.models as models
-import fair_hmumu.configuration as configuration
+import fair_hmumu.trainer
+import fair_hmumu.configuration
 
 
 def main():
@@ -15,20 +14,18 @@ def main():
     args = parser.parse_args()
 
     # get the location and configuration file
-    run_conf = configuration.Configuration(args.point)
+    run_conf = fair_hmumu.configuration.Configuration(args.point)
 
-    print(run_conf.loc)
-    print(run_conf.name)
+    # make the coach
+    trainer = fair_hmumu.trainer.Trainer(run_conf)
 
-    # get the individual configs
-    clf_conf = run_conf.get('Classifier')
-    adv_conf = run_conf.get('Adversary')
-    opt_conf = run_conf.get('Optimiser')
-    trn_conf = run_conf.get('Training')
+    # pretraining
 
-    clf = models.Classifier('Classifier', clf_conf)
-    print(clf)
-    
+    # for i in 
+
+        # train
+
+        # plot results
 
 
 if __name__ == '__main__':

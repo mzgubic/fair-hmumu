@@ -1,21 +1,25 @@
+import fair_hmumu.defs as defs
 import fair_hmumu.models as models
 from fair_hmumu.dataset import DatasetHandler
+from fair_hmumu.preprocessing import PCAWhiteningPreprocessor
 
 
 class Trainer:
 
-    def __init__(self, clf_conf, adv_conf, opt_conf, trn_conf):
+    def __init__(self, run_conf):
+
 
         # configurations
-        self.clf = models.Classifier('clf', clf_conf)
+        self.loc = run_conf.loc
+        self.clf = models.Classifier('clf', run_conf.get('Classifier'))
         self.adv = None #TODO
-        self.opt_conf = opt_conf
-        self.trn_conf = trn_conf
+        self.opt_conf = run_conf.get('Optimiser')
+        self.trn_conf = run_conf.get('Training')
 
         print(self.clf)
-        print(adv_conf)
-        print(opt_conf)
-        print(trn_conf)
+        print(self.adv)
+        print(self.opt_conf)
+        print(self.trn_conf)
 
         # data handling
         production = self.trn_conf['production']
@@ -23,7 +27,15 @@ class Trainer:
         entrystop = self.trn_conf['entrystop']
         self.dh = DatasetHandler(production, high_level, entrystop=entrystop, test_frac=0.25, seed=42)
 
+        self.train = self.dh.get_train(defs.jet0) # TODO: jet channels
+
         # preprocessing
+        self.pre = PCAWhiteningPreprocessor(n_cpts=self.train['X'].shape[1])
+        self.pre_nuis = PCAWhiteningPreprocessor(n_cpts=self.train['Z'].shape[1])
+        self.pre.fit(self.train['X'])
+        self.pre_nuis.fit(self.train['Z'])
+
+
 
 
 
