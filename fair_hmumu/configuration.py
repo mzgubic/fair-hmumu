@@ -116,6 +116,7 @@ class Configuration:
         If it is a sweep conf, iterate over run confs.
         """
 
+        # get a dict of all fixed and variable parameters
         fixed = self.as_dict('fixed')
         sweep = self.as_dict('sweep')
 
@@ -124,16 +125,17 @@ class Configuration:
         desc = [(section, option) for section in sw_sections for option in sweep[section]]
         lists = [sweep[section][option] for section in sw_sections for option in sweep[section]]
 
-        print(desc)
-        print(lists)
         combinations = list(itertools.product(*lists))
-        print(combinations)
 
-        newconf = Configuration.from_dict(fixed, 'conftest.ini')
-        print(newconf)
+        # loop over combinations and make run configs
+        for comb in combinations:
+            
+            par_dict = fixed
+            for (section, option), value in zip(desc, comb):
+                par_dict[section][option] = value
 
+            run_conf = Configuration.from_dict(par_dict, 'name.ini')
 
-        for i in range(4):
-            yield i
+            yield run_conf
 
 
