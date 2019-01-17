@@ -1,3 +1,4 @@
+import os
 import fair_hmumu.defs as defs
 import fair_hmumu.models as models
 from fair_hmumu.dataset import DatasetHandler
@@ -16,10 +17,13 @@ class Trainer:
         self.opt_conf = run_conf.get('Optimiser')
         self.trn_conf = run_conf.get('Training')
 
+        print('------------')
+        print('--- Settings:')
         print(self.clf)
         print(self.adv)
         print(self.opt_conf)
         print(self.trn_conf)
+        print('------------')
 
         # data handling
         production = self.trn_conf['production']
@@ -34,6 +38,10 @@ class Trainer:
         self.pre_nuis = PCAWhiteningPreprocessor(n_cpts=self.train['Z'].shape[1])
         self.pre.fit(self.train['X'])
         self.pre_nuis.fit(self.train['Z'])
+        self.pre.save(os.path.join(self.loc, 'X_{}.pkl'.format(defs.jet0)))
+        self.pre_nuis.save(os.path.join(self.loc, 'Z_{}.pkl'.format(defs.jet0)))
+
+        # environment
 
 
 

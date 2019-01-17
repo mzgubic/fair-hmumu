@@ -74,9 +74,6 @@ class DatasetHandler:
         Z = df[defs.mass].values.reshape(-1, 1)
         W = df[defs.weight].values.reshape(-1, 1)
 
-        for ds in [X, Y, Z, W]:
-            print(ds.shape)
-
         return {'X':X, 'Y':Y, 'Z':Z, 'W':W}
 
     def get_train(self, njet):
