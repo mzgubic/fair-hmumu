@@ -74,7 +74,7 @@ class DatasetHandler:
         Z = df[defs.mass].values
         W = df[defs.weight].values
 
-        return X, Y, Z, W
+        return {'X':X, 'Y':Y, 'Z':Z, 'W':W}
 
     def get_train(self, njet):
         """
