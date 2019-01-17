@@ -120,22 +120,33 @@ class Configuration:
         fixed = self.as_dict('fixed')
         sweep = self.as_dict('sweep')
 
-        # make all the combinations
-        sw_sections = [section for section in sweep if not sweep[section] == {}]
-        desc = [(section, option) for section in sw_sections for option in sweep[section]]
-        lists = [sweep[section][option] for section in sw_sections for option in sweep[section]]
+        # check whether it is indeed a sweep conf
+        is_sweep = bool([1 for section in sweep if not sweep[section] == {}])
 
-        combinations = list(itertools.product(*lists))
+        # yield self if not sweep conf
+        if not is_sweep:
+            yield self
 
-        # loop over combinations and make run configs
-        for comb in combinations:
-            
-            par_dict = fixed
-            for (section, option), value in zip(desc, comb):
-                par_dict[section][option] = value
+        # yield run confs if sweep conf
+        if is_sweep:
 
-            run_conf = Configuration.from_dict(par_dict, 'name.ini')
-
-            yield run_conf
+            # make all the combinations
+            sw_sections = [section for section in sweep if not sweep[section] == {}]
+            desc = [(section, option) for section in sw_sections for option in sweep[section]]
+            lists = [sweep[section][option] for section in sw_sections for option in sweep[section]]
+    
+            combinations = list(itertools.product(*lists))
+    
+            # loop over combinations and make run configs
+            for comb in combinations:
+                
+                par_dict = fixed
+                for (section, option), value in zip(desc, comb):
+                    par_dict[section][option] = value
+    
+                run_conf = Configuration.from_dict(par_dict, 'name.ini')
+                run_conf.write()
+    
+                yield run_conf
 
 
