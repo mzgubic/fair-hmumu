@@ -28,7 +28,14 @@ class Configuration:
 
         # add sections and options
         for section in d.keys():
-            conf.config.add_section(section)
+
+            # add section
+            try:
+                conf.config.add_section(section)
+            except configparser.DuplicateSectionError:
+                pass
+
+            # add option
             for option in d[section]:
                 conf.set(section, option, d[section][option])
 

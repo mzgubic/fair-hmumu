@@ -24,7 +24,6 @@ def main():
     for run_conf in sweep_conf:
         
         print('Printing a new configuration file!')
-        print(run_conf)
 
 if __name__ == '__main__':
     main()
