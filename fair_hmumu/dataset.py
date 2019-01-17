@@ -70,9 +70,12 @@ class DatasetHandler:
     def _xyzw(self, df):
 
         X = df[self.features].values
-        Y = df[defs.target].values
-        Z = df[defs.mass].values
-        W = df[defs.weight].values
+        Y = df[defs.target].values.reshape(-1, 1)
+        Z = df[defs.mass].values.reshape(-1, 1)
+        W = df[defs.weight].values.reshape(-1, 1)
+
+        for ds in [X, Y, Z, W]:
+            print(ds.shape)
 
         return {'X':X, 'Y':Y, 'Z':Z, 'W':W}
 
