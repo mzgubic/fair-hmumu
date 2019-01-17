@@ -20,12 +20,10 @@ def main():
     trainer = fair_hmumu.trainer.Trainer(run_conf)
 
     # pretraining
+    trainer.pretrain()
 
-    # for i in 
-
-        # train
-
-        # plot results
+    # training
+    trainer.train()
 
 
 if __name__ == '__main__':

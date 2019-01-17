@@ -15,9 +15,7 @@ class TFEnvironment(Saveable):
         self.adv = adv
         self.opt_conf = opt_conf
 
-        # set default graph and start session
-        self.graph = tf.Graph()
-
+        # make a session
         self.sess = tf.Session(config=config)
 
     def build(self, batch):
@@ -38,7 +36,7 @@ class TFEnvironment(Saveable):
         # TODO
 
         # optimisers
-        opt_C = tf.train.AdamOptimizer(**self.opt_conf).minimize(self.clf.loss, var_list=self.clf.tf_vars)
+        self.opt_C = tf.train.AdamOptimizer(**self.opt_conf).minimize(self.clf.loss, var_list=self.clf.tf_vars)
 
     def initialise_variables(self):
 
@@ -46,16 +44,25 @@ class TFEnvironment(Saveable):
 
         self.sess.run(tf.global_variables_initializer())
 
-    def pretrain(self, batches):
+    def pretrain_step(self, batch):
 
-        print('--- Pretraining the classifier and the adversary')
+        feed_dict = {self.X_in:batch['X'], self.Y_in:batch['Y'], self.Z_in:batch['Z'], self.W_in:batch['W']}
+        self.sess.run(self.opt_C, feed_dict=feed_dict)
 
-        # pretrain the classifier
-        for batch in batches:
-            pass
+    def train_step_clf(self, batch):
 
+        feed_dict = {self.X_in:batch['X'], self.Y_in:batch['Y'], self.Z_in:batch['Z'], self.W_in:batch['W']}
+        #self.sess.run(self.opt_C, feed_dict=feed_dict) # TODO: opt_C to opt_CA
 
-    def forward(self): #TODO
+    def train_step_adv(self, batch):
+
+        feed_dict = {self.X_in:batch['X'], self.Y_in:batch['Y'], self.Z_in:batch['Z'], self.W_in:batch['W']}
+        # TODO
+
         
-        pass
+
+
+
+
+
 

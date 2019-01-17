@@ -31,16 +31,16 @@ class Trainer:
         entrystop = self.trn_conf['entrystop']
         self.dh = DatasetHandler(production, high_level, entrystop=entrystop, test_frac=0.25, seed=42)
 
-        self.train = self.dh.get_train(defs.jet0) # TODO: jet channels
+        self._train = self.dh.get_train(defs.jet0) # TODO: jet channels
         batch_example = self.dh.get_batch(defs.jet0)
 
         # preprocessing
-        self.pre = PCAWhiteningPreprocessor(n_cpts=self.train['X'].shape[1])
-        self.pre_nuis = PCAWhiteningPreprocessor(n_cpts=self.train['Z'].shape[1])
-        self.pre.fit(self.train['X'])
-        self.pre_nuis.fit(self.train['Z'])
-        self.pre.save(os.path.join(self.loc, 'X_{}.pkl'.format(defs.jet0)))
-        self.pre_nuis.save(os.path.join(self.loc, 'Z_{}.pkl'.format(defs.jet0)))
+        self.pre = PCAWhiteningPreprocessor(n_cpts=self._train['X'].shape[1])
+        self.pre_nuis = PCAWhiteningPreprocessor(n_cpts=self._train['Z'].shape[1])
+        self.pre.fit(self._train['X'])
+        self.pre_nuis.fit(self._train['Z'])
+        self.pre.save(os.path.join(self.loc, 'PCA_X_{}.pkl'.format(defs.jet0)))
+        self.pre_nuis.save(os.path.join(self.loc, 'PCA_Z_{}.pkl'.format(defs.jet0)))
 
         # environment
         self.env = TFEnvironment(self.clf, self.adv, self.opt_conf)
@@ -49,11 +49,37 @@ class Trainer:
 
     def pretrain(self):
 
+        print('--- Training for {} steps'.format(self.trn_conf['n_pre']))
+
         # pretrain the classifier
-        batches = [self.dh.get_batch(defs.jet0) for _ in range(self.trn_conf['n_pre'])]
+        for _ in range(self.trn_conf['n_pre']):
+            batch = self.dh.get_batch(defs.jet0)
+            self.env.pretrain_step(batch)
 
+        # pretrain the adversary
+        for _ in range(self.trn_conf['n_pre']):
+            batch = self.dh.get_batch(defs.jet0)
+            self.env.train_step_adv(batch)
 
+    def train(self):
 
+        print('--- Training for {} steps'.format(self.trn_conf['n_epochs']))
+    
+        # train and plot progress
+        for istep in range(self.trn_conf['n_epochs']):
+            
+            # train the classifier
+            for _ in range(self.trn_conf['n_clf']):
+                batch = self.dh.get_batch(defs.jet0)
+                self.env.train_step_clf(batch)
+
+            # train the adversary
+            for _ in range(self.trn_conf['n_adv']):
+                batch = self.dh.get_batch(defs.jet0)
+                self.env.train_step_adv(batch)
+                
+            
+        
 
 
 
