@@ -19,7 +19,8 @@ class Configuration:
         # read
         self.read()
 
-    def from_dict(self, d, path):
+    @classmethod
+    def from_dict(cls, d, path):
 
         # create the configuration
         conf = Configuration(path)
@@ -128,7 +129,7 @@ class Configuration:
         combinations = list(itertools.product(*lists))
         print(combinations)
 
-        newconf = self.from_dict(fixed, 'conftest.ini')
+        newconf = Configuration.from_dict(fixed, 'conftest.ini')
         print(newconf)
 
 
