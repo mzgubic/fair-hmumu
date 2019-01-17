@@ -3,7 +3,7 @@ import itertools
 import numpy as np
 import uproot as ur
 import pandas as pd
-import defs
+import fair_hmumu.defs as defs
 
 class DatasetHandler:
 

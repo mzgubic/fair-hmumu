@@ -2,6 +2,7 @@ import os
 import ast
 import itertools
 import configparser
+import fair_hmumu.utils as utils
 
 
 class Configuration:
@@ -138,13 +139,14 @@ class Configuration:
             combinations = list(itertools.product(*lists))
     
             # loop over combinations and make run configs
-            for comb in combinations:
+            for i, comb in enumerate(combinations):
                 
                 par_dict = fixed
                 for (section, option), value in zip(desc, comb):
                     par_dict[section][option] = value
     
-                run_conf = Configuration.from_dict(par_dict, 'name.ini')
+                loc = utils.makedir(os.path.join(self.loc, 'runs', 'run{}'.format(i)))
+                run_conf = Configuration.from_dict(par_dict, os.path.join(loc, 'run_conf.ini'))
                 run_conf.write()
     
                 yield run_conf
