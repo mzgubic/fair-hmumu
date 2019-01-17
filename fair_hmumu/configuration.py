@@ -19,13 +19,28 @@ class Configuration:
         # read
         self.read()
 
+    def from_dict(self, d, path):
+
+        # create the configuration
+        conf = Configuration(path)
+
+        # add sections and options
+        for section in d.keys():
+            conf.config.add_section(section)
+            for option in d[section]:
+                conf.set(section, option, d[section][option])
+
+        return conf
+
     def as_dict(self, which='all'):
         """
         Get the section settings as a dict, with types already converted.
         """
 
+        # check input
         assert which in ['all', 'fixed', 'sweep'], "which much be in ['all', 'fixed', 'sweep']"
 
+        # build dictionary
         d = {section:{} for section in self.config.sections()}
 
         for section in self.config.sections():
@@ -111,8 +126,10 @@ class Configuration:
         print(desc)
         print(lists)
         combinations = list(itertools.product(*lists))
-        print(combs)
+        print(combinations)
 
+        newconf = self.from_dict(fixed, 'conftest.ini')
+        print(newconf)
 
 
         for i in range(4):
