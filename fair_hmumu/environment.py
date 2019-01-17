@@ -25,29 +25,39 @@ class TFEnvironment(Saveable):
 
         print('--- Building computational graph')
 
-        # input placeholders
-        self.X_in = tf.placeholder(tf.float32, shape=(None, batch['X'].shape[1]), name='X_in')
-        self.Y_in = tf.placeholder(tf.int32,   shape=(None, batch['Y'].shape[1]), name='Y_in')
-        self.Z_in = tf.placeholder(tf.float32, shape=(None, batch['Z'].shape[1]), name='Z_in')
-        self.W_in = tf.placeholder(tf.float32, shape=(None, batch['W'].shape[1]), name='W_in')
+        with self.graph.as_default():
 
-        # classifier output and loss
-        _, _ = self.clf.forward(self.X_in)
-        _ = self.clf.loss(self.Y_in)
+            # input placeholders
+            self.X_in = tf.placeholder(tf.float32, shape=(None, batch['X'].shape[1]), name='X_in')
+            self.Y_in = tf.placeholder(tf.int32,   shape=(None, batch['Y'].shape[1]), name='Y_in')
+            self.Z_in = tf.placeholder(tf.float32, shape=(None, batch['Z'].shape[1]), name='Z_in')
+            self.W_in = tf.placeholder(tf.float32, shape=(None, batch['W'].shape[1]), name='W_in')
 
-        # adversary output and loss
-        # TODO
+            # classifier output and loss
+            _, _ = self.clf.forward(self.X_in)
+            _ = self.clf.loss(self.Y_in)
 
-        # optimisers
-        opt_C = tf.train.AdamOptimizer(**self.opt_conf).minimize(self.clf.loss, var_list=self.clf.tf_vars)
+            # adversary output and loss
+            # TODO
+
+            # optimisers
+            opt_C = tf.train.AdamOptimizer(**self.opt_conf).minimize(self.clf.loss, var_list=self.clf.tf_vars)
 
     def initialise_variables(self):
+
         print('--- Initialising TensorFlow variables')
-        self.sess.run(tf.global_variables_initializer())
 
-    def pretrain(self, s):
+        with self.graph.as_default():
+            self.sess.run(tf.global_variables_initializer())
 
-        pass
+    def pretrain(self, batches):
+
+        print('--- Pretraining the classifier and the adversary')
+
+        # pretrain the classifier
+        for batch in batches:
+            pass
+
 
     def forward(self): #TODO
         

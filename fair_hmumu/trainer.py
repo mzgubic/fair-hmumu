@@ -45,6 +45,14 @@ class Trainer:
         # environment
         self.env = TFEnvironment(self.clf, self.adv, self.opt_conf)
         self.env.build(batch_example)
+        self.env.initialise_variables()
+
+    def pretrain(self):
+
+        # pretrain the classifier
+        batches = [self.dh.get_batch(defs.jet0) for _ in range(self.trn_conf['n_pre'])]
+
+
 
 
 
