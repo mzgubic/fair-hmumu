@@ -15,6 +15,9 @@ class Configuration:
         # parser
         self.config = configparser.ConfigParser()
 
+        # read
+        self.read()
+
     def get_dict(self, section):
         """
         Get the section settings as a dict, with types already converted.
@@ -74,10 +77,3 @@ class Configuration:
         return ret[:-1]
 
 
-conf = Configuration('../examples/one_run_conf.ini.example')
-conf.read()
-print(conf.get('Adversary', 'type'))
-conf.set('Adversary', 'type', 'GaussMixNLL')
-print(conf.get('Adversary', 'type'))
-conf.write()
-print(conf.get('Adversary'))
