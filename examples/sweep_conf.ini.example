@@ -1,0 +1,22 @@
+[Classifier]
+depth = 3
+n_units = 40
+
+[Adversary]
+type = GaussMixNLL
+n_components = 5
+depth = 3
+n_units = 40
+
+[Optimiser]
+learning_rate = [0.001, 0.002]
+epsilon = 0.001
+
+[Training]
+production = 20190116_default
+n_epochs = 10
+lambda = [0.001, 0.0015, 0.002]
+n_pre = 30
+n_clf = 1
+n_adv = 5
+
