@@ -1,5 +1,5 @@
-#import tensorflow as tf
-#import tensorflow.contrib.layers as layers
+import tensorflow as tf
+import tensorflow.contrib.layers as layers
 from fair_hmumu.utils import Saveable
 
 
@@ -18,35 +18,33 @@ class Classifier(Model):
     
     def forward(self, input_layer):
 
-        pass 
-        ## build the graph in the scope
-        #with tf.variable_scope(self.name):
+        # build the graph in the scope
+        with tf.variable_scope(self.name):
 
-        #    # input layer
-        #    lay = input_layer
+            # input layer
+            lay = input_layer
 
-        #    # hidden layers
-        #    for layer in range(int(self.hps['depth'])):
-        #        lay = layers.relu(lay, int(self.hps['n_units']))
+            # hidden layers
+            for layer in range(int(self.hps['depth'])):
+                lay = layers.relu(lay, int(self.hps['n_units']))
 
-        #    # output layer
-        #    self.output = layers.linear(lay, self.hps['n_classes'])
+            # output layer
+            self.output = layers.linear(lay, self.hps['n_classes'])
 
-        #these_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name)
+        self.tf_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name)
 
-        #return self.outputs, these_vars
+        return self.output, self.tf_vars
 
     def loss(self, target):
 
-        pass
-        ## build the graph
-        #one_hot = tf.one_hot(target, depth=self.hps['n_classes'])
+        # build the graph
+        one_hot = tf.one_hot(target, depth=self.hps['n_classes'])
 
-        ## loss
-        #loss = tf.nn.softmax_cross_entropy_with_logits_v2(labels=one_hot, logits=self.outputs)
-        #self.loss = tf.math.reduce_mean(loss)
+        # loss
+        loss = tf.nn.softmax_cross_entropy_with_logits_v2(labels=one_hot, logits=self.output)
+        self.loss = tf.math.reduce_mean(loss)
 
-        #return self.loss
+        return self.loss
 
 
 

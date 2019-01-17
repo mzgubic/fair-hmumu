@@ -3,12 +3,12 @@ import fair_hmumu.defs as defs
 import fair_hmumu.models as models
 from fair_hmumu.dataset import DatasetHandler
 from fair_hmumu.preprocessing import PCAWhiteningPreprocessor
+from fair_hmumu.environment import TFEnvironment
 
 
 class Trainer:
 
     def __init__(self, run_conf):
-
 
         # configurations
         self.loc = run_conf.loc
@@ -32,6 +32,7 @@ class Trainer:
         self.dh = DatasetHandler(production, high_level, entrystop=entrystop, test_frac=0.25, seed=42)
 
         self.train = self.dh.get_train(defs.jet0) # TODO: jet channels
+        batch_example = self.dh.get_batch(defs.jet0)
 
         # preprocessing
         self.pre = PCAWhiteningPreprocessor(n_cpts=self.train['X'].shape[1])
@@ -42,6 +43,8 @@ class Trainer:
         self.pre_nuis.save(os.path.join(self.loc, 'Z_{}.pkl'.format(defs.jet0)))
 
         # environment
+        self.env = TFEnvironment(self.clf, self.adv, self.opt_conf)
+        self.env.build(batch_example)
 
 
 
