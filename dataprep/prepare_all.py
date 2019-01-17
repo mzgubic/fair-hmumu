@@ -30,9 +30,6 @@ def main():
     loc[defs.ss]      = utils.makedir('/data/atlassmallfiles/users/zgubic/hmumu/spurious_signal')
 
     loc[out]     = utils.makedir(os.path.join(os.getenv('DATA'), prod_name))
-    loc[step1]   = utils.makedir(os.path.join(loc[out], step1))
-    loc[step2]   = utils.makedir(os.path.join(loc[out], step2))
-    loc[step3]   = utils.makedir(os.path.join(loc[out], step3))
 
     # get the file names
     fnames = {}
@@ -52,6 +49,7 @@ def main():
     #####################
 
     if 1 in do_steps:
+        loc[step1]   = utils.makedir(os.path.join(loc[out], step1))
         for dataset in defs.datasets:
             for fname in fnames[dataset]:
     
@@ -73,6 +71,7 @@ def main():
     #####################
 
     if 2 in do_steps:
+        loc[step2]   = utils.makedir(os.path.join(loc[out], step2))
         for dataset in defs.datasets:
 
             # collect input files
@@ -90,6 +89,7 @@ def main():
     #####################
 
     if 3 in do_steps:
+        loc[step3]   = utils.makedir(os.path.join(loc[out], step3))
         for dataset in defs.datasets:
 
             # hadded file
