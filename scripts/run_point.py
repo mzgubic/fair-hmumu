@@ -19,6 +19,17 @@ def main():
     print(run_conf.loc)
     print(run_conf.name)
 
+    # get the individual configs
+    clf_conf = run_conf.get('Classifier')
+    adv_conf = run_conf.get('Adversary')
+    opt_conf = run_conf.get('Optimiser')
+    trn_conf = run_conf.get('Training')
+
+    print(clf_conf)
+    print(adv_conf)
+    print(opt_conf)
+    print(trn_conf)
+
 
 
 if __name__ == '__main__':

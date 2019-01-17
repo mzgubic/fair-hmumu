@@ -23,7 +23,9 @@ def main():
     # submit the jobs for all the run configs
     for run_conf in sweep_conf:
 
+        print()
         print('--- Running point')
+        print()
         
         # make the command
         e = os.path.join(os.getenv('SRC'), 'scripts', 'run_point.py')
