@@ -10,20 +10,28 @@ def main():
     parser = argparse.ArgumentParser(description='ArgParser')
     parser.add_argument('-s', '--sweep',
                         default='testsweep',
-                        help='Location of the sweep home dir.')
+                        help='Name of the sweep.')
     args = parser.parse_args()
-
-    print('Running {}'.format(args.sweep))
 
     # get the location and configuration file
     loc = utils.makedir(os.path.join(os.getenv('RUN'), args.sweep))
     sweep_conf = configuration.Configuration(os.path.join(loc, 'sweep_conf.ini'))
 
+    print('--- Running {}'.format(args.sweep))
     print(sweep_conf)
 
+    # submit the jobs for all the run configs
     for run_conf in sweep_conf:
+
+        print('--- Running point')
         
-        print('Printing a new configuration file!')
+        # make the command
+        e = os.path.join(os.getenv('SRC'), 'scripts', 'run_point.py')
+        p = run_conf.path
+        command = 'python3 {} -p {}'.format(e, p)
+
+        # run the command (submit)
+        os.system(command)
 
 if __name__ == '__main__':
     main()

@@ -5,5 +5,6 @@ source /cvmfs/sft-nightlies.cern.ch/lcg/views/dev3python3/latest/x86_64-centos7-
 export PYTHONPATH="$PYTHONPATH:/home/zgubic/hmumu/fair-hmumu/lib/python3.6/site-packages"
 export PYTHONPATH="$PYTHONPATH:/home/zgubic/hmumu/fair-hmumu"
 
+export SRC="/home/zgubic/hmumu/fair-hmumu"
 export DATA="/data/atlassmallfiles/users/zgubic/hmumu/fair-hmumu/data"
 export RUN="/data/atlassmallfiles/users/zgubic/hmumu/fair-hmumu/run"

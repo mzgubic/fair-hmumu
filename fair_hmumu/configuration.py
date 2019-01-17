@@ -152,7 +152,7 @@ class Configuration:
                 for (section, option), value in zip(desc, comb):
                     par_dict[section][option] = value
     
-                loc = utils.makedir(os.path.join(self.loc, 'runs', 'run{}'.format(i)))
+                loc = utils.makedir(os.path.join(self.loc, 'points', 'run{}'.format(i)))
                 run_conf = Configuration.from_dict(par_dict, os.path.join(loc, 'run_conf.ini'))
                 run_conf.write()
     
