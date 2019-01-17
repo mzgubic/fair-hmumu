@@ -1,5 +1,6 @@
 import os
 import ast
+import itertools
 import configparser
 
 
@@ -18,10 +19,31 @@ class Configuration:
         # read
         self.read()
 
-    def get_dict(self, section):
+    def as_dict(self, which='all'):
         """
         Get the section settings as a dict, with types already converted.
         """
+
+        assert which in ['all', 'fixed', 'sweep'], "which much be in ['all', 'fixed', 'sweep']"
+
+        d = {section:{} for section in self.config.sections()}
+
+        for section in self.config.sections():
+            for option in self.config[section]:
+
+                value = self.get(section, option)
+                fixed = type(value) in [str, float, int]
+
+                if which == 'all':
+                    d[section][option] = value
+
+                if which == 'fixed' and fixed:
+                    d[section][option] = value
+
+                if which == 'sweep' and not fixed:
+                    d[section][option] = value
+
+        return d 
 
     def get(self, section, option=None):
         """
@@ -39,7 +61,7 @@ class Configuration:
         else:
             try:
                 return ast.literal_eval(self.config.get(section, option))
-            except ValueError:
+            except (ValueError, SyntaxError) as e:
                 return self.config.get(section, option)
 
     def set(self, section, option, value):
@@ -63,11 +85,8 @@ class Configuration:
     def __str__(self):
         
         ret = '\n'
-        for section in self.config:
+        for section in self.config.sections():
             
-            # skip default
-            if section == 'DEFAULT': continue
-
             # write a section
             ret += '[{}]\n'.format(section)
             for option in self.config.options(section):
@@ -75,5 +94,28 @@ class Configuration:
             ret += '\n'
 
         return ret[:-1]
+
+    def __iter__(self):
+        """
+        If it is a sweep conf, iterate over run confs.
+        """
+
+        fixed = self.as_dict('fixed')
+        sweep = self.as_dict('sweep')
+
+        # make all the combinations
+        sw_sections = [section for section in sweep if not sweep[section] == {}]
+        desc = [(section, option) for section in sw_sections for option in sweep[section]]
+        lists = [sweep[section][option] for section in sw_sections for option in sweep[section]]
+
+        print(desc)
+        print(lists)
+        combinations = list(itertools.product(*lists))
+        print(combs)
+
+
+
+        for i in range(4):
+            yield i
 
 

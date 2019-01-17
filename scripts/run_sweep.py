@@ -13,13 +13,18 @@ def main():
                         help='Location of the sweep home dir.')
     args = parser.parse_args()
 
-    print('Running a sweep!')
+    print('Running {}'.format(args.sweep))
 
     # get the location and configuration file
     loc = utils.makedir(os.path.join(os.getenv('RUN'), args.sweep))
     sweep_conf = configuration.Configuration(os.path.join(loc, 'sweep_conf.ini'))
 
     print(sweep_conf)
+
+    for run_conf in sweep_conf:
+        
+        print('Printing a new configuration file!')
+        print(run_conf)
 
 if __name__ == '__main__':
     main()
