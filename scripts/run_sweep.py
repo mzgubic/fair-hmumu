@@ -34,6 +34,7 @@ def main():
 
         # run the command (submit)
         os.system(command)
+        break
 
 if __name__ == '__main__':
     main()

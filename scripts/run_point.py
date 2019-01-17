@@ -1,6 +1,7 @@
 import os
 import argparse
 import fair_hmumu.utils as utils
+import fair_hmumu.models as models
 import fair_hmumu.configuration as configuration
 
 
@@ -25,11 +26,9 @@ def main():
     opt_conf = run_conf.get('Optimiser')
     trn_conf = run_conf.get('Training')
 
-    print(clf_conf)
-    print(adv_conf)
-    print(opt_conf)
-    print(trn_conf)
-
+    clf = models.Classifier('Classifier', clf_conf)
+    print(clf)
+    
 
 
 if __name__ == '__main__':

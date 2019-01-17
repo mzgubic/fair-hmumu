@@ -1,6 +1,7 @@
 [Classifier]
 depth = 3
 n_units = 40
+n_classes = 2
 
 [Adversary]
 type = GaussMixNLL

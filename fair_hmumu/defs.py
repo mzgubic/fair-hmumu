@@ -14,3 +14,4 @@ data = 'data'
 ss = 'ss'
 datasets = [sig, data, ss]
 
+n_classes = 2 # sig vs bkg, could be 3 for ggf, vbf, bkg
