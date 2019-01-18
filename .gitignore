@@ -1,3 +1,6 @@
+# plots
+*.pdf
+
 # configuration files
 *.ini
 

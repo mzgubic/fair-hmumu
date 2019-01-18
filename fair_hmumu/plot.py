@@ -31,7 +31,8 @@ def clf_output(clf_scores, labels, colours, styles, loc, unique_id):
     centres = (lows+highs)*0.5
 
     # plot
-    fig, ax = plt.subplots(figsize=(7,7))
+    fig, ax = plt.subplots(2, 1, figsize=(7,7), sharex=True, gridspec_kw={'height_ratios':[3,1]})
+    fig.suptitle('Background-only MC')
 
     # loop over classifiers
     for i, score in enumerate(clf_scores):
@@ -39,18 +40,35 @@ def clf_output(clf_scores, labels, colours, styles, loc, unique_id):
         # get clf outputs
         clf_hists = score.clf_hist
 
-        # plot them
-        kwargs = {'bins':defs.bins, 'color':colours[i], 'histtype':'step', 'density':True, 'label':labels[i]}
-        for mass_range, lstyle in zip(sorted(clf_hists.keys()), ['--', ':', '-']):
-            ax.hist(centres, weights=clf_hists[mass_range], linestyle=lstyle, **kwargs)
+        # common keyword arguments
+        kwargs = {'bins':defs.bins, 'color':colours[i], 'histtype':'step'}
 
-    ax.legend(loc='best')
-    ax.set_xlabel('Classifier output')
-    ax.set_ylabel('Normalised events')
+        # plot all mass ranges
+        for mass_range, lstyle in zip(['low', 'medium', 'high'], [':', '-', '--']):
+
+            # top panel
+            mass_comment = {'low':'< 120 GeV', 'medium':'120 < 130 GeV', 'high':'> 130 GeV'}
+            label = '{} ({})'.format(labels[i], mass_comment[mass_range])
+            ax[0].hist(centres, weights=clf_hists[mass_range], linestyle=lstyle, label=label, **kwargs)
+
+            # bottom panel
+            with np.errstate(divide='ignore', invalid='ignore'):
+                ratio = clf_hists[mass_range]/clf_hists['medium']
+            ratio[ratio == np.inf] = 0
+            ratio = np.nan_to_num(ratio)
+            ax[1].hist(centres, weights=ratio, linestyle=lstyle, **kwargs)
+
+    ax[0].legend(loc='best', fontsize=10)
+    ax[0].set_xlim(0,1)
+    ax[0].set_ylabel('Normalised events')
+    ax[1].set_xlim(0,1)
+    ax[1].set_ylim(0,2)
+    ax[1].set_xlabel('Classifier output')
 
     # save
     path = os.path.join(loc, 'clf_output_{}.pdf'.format(unique_id))
     plt.savefig(path)
     print(path)
 
-        
+
+
