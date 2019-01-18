@@ -87,8 +87,8 @@ class Trainer:
         print('--- Making benchmark prediction on the test and ss events')
 
         # predict on the test set
-        test_pred = self.bcm.predict_proba(self._test['X'])[:, 1]
-        ss_pred = self.bcm.predict_proba(self._ss['X'])[:, 1]
+        test_pred = self.bcm.predict_proba(self._test['X'])[:, 1].reshape(-1, 1)
+        ss_pred = self.bcm.predict_proba(self._ss['X'])[:, 1].reshape(-1, 1)
 
         # and store the score
         self.bcm_score = self.assess_clf(self.bcm_conf['type'], test_pred, ss_pred) 
@@ -165,8 +165,12 @@ class Trainer:
                 unique_id = 'final' if is_final_step else str(istep)
 
                 # make plots
-                loc = self.loc if is_final_step else utils.makedir(os.path.join(self.loc, 'roc_curve'))
-                plot.roc_curve(clf_scores, labels, colours, styles, loc, unique_id)
+                #loc = self.loc if is_final_step else utils.makedir(os.path.join(self.loc, 'roc_curve'))
+                #plot.roc_curve(clf_scores, labels, colours, styles, loc, unique_id)
+
+                loc = self.loc if is_final_step else utils.makedir(os.path.join(self.loc, 'clf_output'))
+                plot.clf_output(clf_scores, labels, colours, styles, loc, unique_id)
+
 
     def assess_clf(self, name, test_pred, ss_pred):
 
@@ -174,8 +178,8 @@ class Trainer:
         # roc curves
         ############
 
-        fprs, tprs, _ = sklearn.metrics.roc_curve(self._test['Y'], test_pred, sample_weight=self._test['W'])
-        roc_auc = sklearn.metrics.roc_auc_score(self._test['Y'], test_pred, sample_weight=self._test['W'])
+        fprs, tprs, _ = sklearn.metrics.roc_curve(self._test['Y'], test_pred.ravel(), sample_weight=self._test['W'])
+        roc_auc = sklearn.metrics.roc_auc_score(self._test['Y'], test_pred.ravel(), sample_weight=self._test['W'])
         roc = fprs, tprs, roc_auc
 
         ############
@@ -193,8 +197,8 @@ class Trainer:
         # now compute the classifier distribution
         clf_score, clf_hist = {}, {}
         for mass_range in ind:
-            clf_score[mass_range] = mass[ind[mass_range]]
-            clf_hist[mass_range] = np.histogram(clf_score[mass_range], bins=100, range=(110, 160))
+            clf_score[mass_range] = ss_pred[ind[mass_range]]
+            clf_hist[mass_range], _ = np.histogram(clf_score[mass_range], bins=defs.bins, range=(0, 1))
 
         ############
         # fairness
