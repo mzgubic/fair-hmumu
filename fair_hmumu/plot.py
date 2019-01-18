@@ -22,6 +22,7 @@ def roc_curve(clf_scores, labels, colours, styles, loc, unique_id):
     plt.savefig(path)
     print(path)
 
+
 def clf_output(clf_scores, labels, colours, styles, loc, unique_id):
 
     # compute the centres of the bins
@@ -38,10 +39,10 @@ def clf_output(clf_scores, labels, colours, styles, loc, unique_id):
     for i, score in enumerate(clf_scores):
 
         # get clf outputs
-        clf_hists = score.clf_hist
+        clf_hists = score.clf_hists
 
         # common keyword arguments
-        kwargs = {'bins':defs.bins, 'color':colours[i], 'histtype':'step'}
+        kwargs = {'bins':defs.bins, 'color':colours[i], 'histtype':'step', 'range':(0,1)}
 
         # plot all mass ranges
         for mass_range, lstyle in zip(['low', 'medium', 'high'], [':', '-', '--']):
@@ -69,6 +70,60 @@ def clf_output(clf_scores, labels, colours, styles, loc, unique_id):
     path = os.path.join(loc, 'clf_output_{}.pdf'.format(unique_id))
     plt.savefig(path)
     print(path)
+
+
+def mass_shape(clf_scores, perc, labels, colours, styles, loc, unique_id):
+
+    # compute the centres of the bins
+    edges = np.linspace(defs.mlow, defs.mhigh, defs.bins+1)
+    lows = edges[:-1]
+    highs = edges[1:]
+    centres = (lows+highs)*0.5
+
+    # plot
+    fig, ax = plt.subplots(2, 1, figsize=(7,7), sharex=True, gridspec_kw={'height_ratios':[3,1]})
+    fig.suptitle('Background-only MC')
+
+    # loop over classifiers
+    for i, score in enumerate(clf_scores):
+
+        # get clf outputs
+        sel_hist, full_hist = score.mass_hists[perc]
+
+        # common keyword arguments
+        kwargs = {'bins':defs.bins, 'color':colours[i], 'histtype':'step', 'range':(defs.mlow, defs.mhigh)}
+
+        # top panel
+        label = '{} (best {}%)'.format(labels[i], perc)
+        ax[0].hist(centres, weights=sel_hist, linestyle=styles[i], label=label, **kwargs)
+
+        # bottom panel
+        with np.errstate(divide='ignore', invalid='ignore'):
+            ratio = sel_hist/full_hist
+        ratio[ratio == np.inf] = 0
+        ratio = np.nan_to_num(ratio)
+        ax[1].hist(centres, weights=ratio, linestyle=styles[i], **kwargs)
+
+    ax[1].plot([defs.mlow, defs.mhigh], [perc/100., perc/100.], 'k:')
+    ax[0].legend(loc='best', fontsize=10)
+    ax[0].set_xlim(defs.mlow, defs.mhigh)
+    ax[0].set_ylabel('Events')
+    ax[1].set_xlim(defs.mlow, defs.mhigh)
+    ax[1].set_xlabel('Invariant mass [GeV]')
+
+    # save
+    path = os.path.join(loc, 'mass_shape_{}p_{}.pdf'.format(perc, unique_id))
+    plt.savefig(path)
+    print(path)
+
+   
+
+
+
+
+
+
+
 
 
 

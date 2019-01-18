@@ -22,6 +22,7 @@ class Trainer:
         self.opt_conf = run_conf.get('Optimiser')
         self.trn_conf = run_conf.get('Training')
         self.bcm_conf = run_conf.get('Benchmark')
+        self.percentiles = [50, 10]
 
         print('------------')
         print('--- Settings:')
@@ -165,12 +166,15 @@ class Trainer:
                 unique_id = 'final' if is_final_step else str(istep)
 
                 # make plots
-                #loc = self.loc if is_final_step else utils.makedir(os.path.join(self.loc, 'roc_curve'))
-                #plot.roc_curve(clf_scores, labels, colours, styles, loc, unique_id)
+                loc = self.loc if is_final_step else utils.makedir(os.path.join(self.loc, 'roc_curve'))
+                plot.roc_curve(clf_scores, labels, colours, styles, loc, unique_id)
 
                 loc = self.loc if is_final_step else utils.makedir(os.path.join(self.loc, 'clf_output'))
                 plot.clf_output(clf_scores, labels, colours, styles, loc, unique_id)
 
+                for perc in self.percentiles:
+                    loc = self.loc if is_final_step else utils.makedir(os.path.join(self.loc, 'mass_shape_{}p'.format(perc)))
+                    plot.mass_shape(clf_scores, perc, labels, colours, styles, loc, unique_id)
 
     def assess_clf(self, name, test_pred, ss_pred):
 
@@ -195,38 +199,51 @@ class Trainer:
         ind['medium'] = np.logical_and(np.logical_not(ind['low']), np.logical_not(ind['high']))
 
         # now compute the classifier distribution
-        clf_hist = {}
+        clf_hists = {}
         for mass_range in ind:
             clf_score = ss_pred[ind[mass_range]]
             weights = self._ss['W'][ind[mass_range]]
-            clf_hist[mass_range], _ = np.histogram(clf_score, weights=weights, bins=defs.bins, range=(0, 1), density=True)
+            clf_hists[mass_range], _ = np.histogram(clf_score, weights=weights, bins=defs.bins, range=(0, 1), density=True)
 
         ############
         # fairness
         ############
 
+        mass_hists = {}
+        for perc in self.percentiles:
+
+            # determine the mass values in top percentile
+            cut = np.percentile(ss_pred, 100-perc)
+            sel_mass = mass[ss_pred > cut]
+            sel_weights = self._ss['W'][ss_pred > cut]
+
+            # and compute histograms
+            sel_hist, _ = np.histogram(sel_mass, weights=sel_weights, bins=defs.bins, range=(defs.mlow, defs.mhigh))
+            full_hist, _ = np.histogram(mass, weights=self._ss['W'], bins=defs.bins, range=(defs.mlow, defs.mhigh))
+
+            # pack up in dict
+            mass_hists[perc] = sel_hist, full_hist
+            
         # construct the score object
-        score = ClassifierScore(name, roc, clf_hist)
+        score = ClassifierScore(name, roc, clf_hists, mass_hists)
 
         return score
 
 
 class ClassifierScore(utils.Saveable):
 
-    def __init__(self, name, roc, clf_hist):
+    def __init__(self, name, roc, clf_hists, mass_hists):
 
         self.name = name
         self.fname = '{}_score.pkl'.format(self.name)
         self.roc_curve = roc[:2]
         self.roc_auc = roc[2]
-        self.clf_hist = clf_hist
+        self.clf_hists = clf_hists
+        self.mass_hists = mass_hists
 
     def __str__(self):
 
         return '{}: ROC AUC=0.5, fairness=0.5'.format(self.name)
-
-
-
 
 
 
