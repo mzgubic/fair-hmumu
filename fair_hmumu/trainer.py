@@ -55,12 +55,18 @@ class Trainer:
 
     def _fit_preprocessing(self):
 
-        # fit the data preprocessing for the features and the mass
         self.pre = {}
         for xz in ['X', 'Z']:
+
+            # fit the data preprocessing for the features and the mass
             self.pre[xz] = PCAWhiteningPreprocessor(n_cpts=self._train[xz].shape[1])
             self.pre[xz].fit(self._train[xz])
             self.pre[xz].save(os.path.join(self.loc, 'PCA_{}_{}.pkl'.format(xz, defs.jet0)))
+
+            # apply it to the datasets
+            self._train[xz] = self.pre[xz].transform(self._train[xz])
+            self._test[xz] = self.pre[xz].transform(self._test[xz])
+            self._ss[xz] = self.pre[xz].transform(self._ss[xz])
 
     def _train_benchmarks(self):
 
@@ -89,9 +95,18 @@ class Trainer:
 
     def _setup_environment(self):
 
+        # set up the tensorflow environment in which the graphs are built and executed
         self.env = TFEnvironment(self.clf, self.adv, self.opt_conf)
-        self.env.build(self.dh.get_batch(defs.jet0))
+        self.env.build(self.transform(self.dh.get_batch(defs.jet0)))
         self.env.initialise_variables()
+
+    def transform(self, batch):
+
+        # transform X and Z
+        for xz in ['X', 'Z']:
+            batch[xz] = self.pre[xz].transform(batch[xz])
+
+        return batch
 
     def pretrain(self):
 
@@ -103,11 +118,13 @@ class Trainer:
         # pretrain the classifier
         for _ in range(self.trn_conf['n_pre']):
             batch = self.dh.get_batch(defs.jet0)
+            batch = self.transform(batch)
             self.env.pretrain_step(batch)
 
         # pretrain the adversary
         for _ in range(self.trn_conf['n_pre']):
             batch = self.dh.get_batch(defs.jet0)
+            batch = self.transform(batch)
             self.env.train_step_adv(batch)
 
     def train(self):
@@ -120,11 +137,13 @@ class Trainer:
             # train the classifier
             for _ in range(self.trn_conf['n_clf']):
                 batch = self.dh.get_batch(defs.jet0)
+                batch = self.transform(batch)
                 self.env.train_step_clf(batch)
 
             # train the adversary
             for _ in range(self.trn_conf['n_adv']):
                 batch = self.dh.get_batch(defs.jet0)
+                batch = self.transform(batch)
                 self.env.train_step_adv(batch)
 
             # only plot every ten steps and the final one
