@@ -81,8 +81,8 @@ class Trainer:
         if self.bcm_conf['type'] == 'GBC':
             self.bcm = GradientBoostingClassifier(**bcm_hps)
 
-        # train the model
-        self.bcm.fit(self._train['X'], self._train['Y'].ravel(), sample_weight=self._train['W'].ravel())
+        # training set is very unbalanced, fit without the weights
+        self.bcm.fit(self._train['X'], self._train['Y'].ravel())
 
         print('--- Making benchmark prediction on the test and ss events')
 
