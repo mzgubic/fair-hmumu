@@ -121,7 +121,7 @@ class DatasetHandler:
 
         # how many to fetch
         if nentries == None or nentries < 0:
-            nentries == all_entries
+            nentries = all_entries
         else:
             nentries = min(nentries, all_entries)
 
