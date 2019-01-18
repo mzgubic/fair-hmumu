@@ -2,8 +2,9 @@ import os
 import sklearn
 from sklearn.ensemble import GradientBoostingClassifier
 import fair_hmumu.defs as defs
+import fair_hmumu.plot as plot
 import fair_hmumu.models as models
-from fair_hmumu.utils import Saveable
+import fair_hmumu.utils as utils
 from fair_hmumu.dataset import DatasetHandler
 from fair_hmumu.preprocessing import PCAWhiteningPreprocessor
 from fair_hmumu.environment import TFEnvironment
@@ -100,8 +101,8 @@ class Trainer:
 
         print('--- Training for {} steps'.format(self.trn_conf['n_epochs']))
     
-        # training step: clf and adv
-        for istep in range(self.trn_conf['n_epochs']):
+        n_epochs = self.trn_conf['n_epochs']
+        for istep in range(n_epochs):
             
             # train the classifier
             for _ in range(self.trn_conf['n_clf']):
@@ -119,10 +120,16 @@ class Trainer:
             #clf_score = self.assess_clf('{}_{}'.format(self.clf.name, istep), test_pred, ss_pred) 
             #clf_score.save(os.path.join(self.loc, clf_score.fname))
 
-            # plot performance
-            # TODO
+            # plot setup and plotting
+            clf_scores = [self.bcm_score]
+            labels = [self.bcm_conf['type']]
+            colours = ['k']
+            styles = ['-']
+            unique_id = 'final' if istep == n_epochs-1 else str(istep)
 
-        
+            loc = self.loc if istep == n_epochs-1 else utils.makedir(os.path.join(self.loc, 'roc_curve'))
+            plot.roc_curve(clf_scores, labels, colours, styles, loc, unique_id)
+
     def assess_clf(self, name, test_pred, ss_pred):
 
         # roc curves
@@ -140,7 +147,7 @@ class Trainer:
         return score
 
 
-class ClassifierScore(Saveable):
+class ClassifierScore(utils.Saveable):
 
     def __init__(self, name, roc):
 
