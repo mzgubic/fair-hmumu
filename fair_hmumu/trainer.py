@@ -31,34 +31,38 @@ class Trainer:
         print(self.bcm_conf)
         print('------------')
 
+        # load the data handler and the data
+        self._load_data()
+
+        # data preprocessing
+        self._fit_preprocessing()
+
+        # set up TensorFlow environment
+        self._setup_environment()
+
+    def _load_data(self):
+ 
         # data handling
         production = self.trn_conf['production']
-        high_level = ['Z_PT', 'Muons_CosThetaStar']
+        features = ['Z_PT', 'Muons_CosThetaStar']
         entrystop = self.trn_conf['entrystop']
-        self.dh = DatasetHandler(production, high_level, entrystop=entrystop, test_frac=0.25, seed=42)
+        self.dh = DatasetHandler(production, features, entrystop=entrystop, test_frac=0.25, seed=42)
 
+        # load 
         self._train = self.dh.get_train(defs.jet0) # TODO: jet channels
         self._test = self.dh.get_test(defs.jet0) # TODO: jet channels
         self._ss = self.dh.get_ss(defs.jet0) # TODO: jet channels
-        batch_example = self.dh.get_batch(defs.jet0)
 
-        # preprocessing
-        self.pre = PCAWhiteningPreprocessor(n_cpts=self._train['X'].shape[1])
-        self.pre_nuis = PCAWhiteningPreprocessor(n_cpts=self._train['Z'].shape[1])
-        self.pre.fit(self._train['X'])
-        self.pre_nuis.fit(self._train['Z'])
-        self.pre.save(os.path.join(self.loc, 'PCA_X_{}.pkl'.format(defs.jet0)))
-        self.pre_nuis.save(os.path.join(self.loc, 'PCA_Z_{}.pkl'.format(defs.jet0)))
+    def _fit_preprocessing(self):
 
-        # benchmark training
-        self.train_benchmarks()
+        # fit the data preprocessing for the features and the mass
+        self.pre = {}
+        for xz in ['X', 'Z']:
+            self.pre[xz] = PCAWhiteningPreprocessor(n_cpts=self._train[xz].shape[1])
+            self.pre[xz].fit(self._train[xz])
+            self.pre[xz].save(os.path.join(self.loc, 'PCA_{}_{}.pkl'.format(xz, defs.jet0)))
 
-        # environment
-        self.env = TFEnvironment(self.clf, self.adv, self.opt_conf)
-        self.env.build(batch_example)
-        self.env.initialise_variables()
-
-    def train_benchmarks(self):
+    def _train_benchmarks(self):
 
         print('--- Training the benchmark {} model'.format(self.bcm_conf['type']))
 
@@ -83,7 +87,16 @@ class Trainer:
         self.bcm_score = self.assess_clf(self.bcm_conf['type'], test_pred, ss_pred) 
         self.bcm_score.save(os.path.join(self.loc, self.bcm_score.fname))
 
+    def _setup_environment(self):
+
+        self.env = TFEnvironment(self.clf, self.adv, self.opt_conf)
+        self.env.build(self.dh.get_batch(defs.jet0))
+        self.env.initialise_variables()
+
     def pretrain(self):
+
+        # benchmark training
+        self._train_benchmarks()
 
         print('--- Pretraining for {} steps'.format(self.trn_conf['n_pre']))
 
