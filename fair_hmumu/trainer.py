@@ -114,21 +114,26 @@ class Trainer:
                 batch = self.dh.get_batch(defs.jet0)
                 self.env.train_step_adv(batch)
 
-            # monitor performance
-            test_pred = None
-            ss_pred = None 
-            #clf_score = self.assess_clf('{}_{}'.format(self.clf.name, istep), test_pred, ss_pred) 
-            #clf_score.save(os.path.join(self.loc, clf_score.fname))
+            # only plot every ten steps and the final one
+            is_final_step = (istep == n_epochs-1)
+            if is_final_step or istep%10 == 0:
 
-            # plot setup and plotting
-            clf_scores = [self.bcm_score]
-            labels = [self.bcm_conf['type']]
-            colours = ['k']
-            styles = ['-']
-            unique_id = 'final' if istep == n_epochs-1 else str(istep)
+                # asses classifier performance
+                test_pred = None
+                ss_pred = None 
+                #clf_score = self.assess_clf('{}_{}'.format(self.clf.name, istep), test_pred, ss_pred) 
+                #clf_score.save(os.path.join(self.loc, clf_score.fname))
 
-            loc = self.loc if istep == n_epochs-1 else utils.makedir(os.path.join(self.loc, 'roc_curve'))
-            plot.roc_curve(clf_scores, labels, colours, styles, loc, unique_id)
+                # plot setup 
+                clf_scores = [self.bcm_score]
+                labels = [self.bcm_conf['type']]
+                colours = ['k']
+                styles = ['-']
+                unique_id = 'final' if is_final_step else str(istep)
+
+                # make plots
+                loc = self.loc if is_final_step else utils.makedir(os.path.join(self.loc, 'roc_curve'))
+                plot.roc_curve(clf_scores, labels, colours, styles, loc, unique_id)
 
     def assess_clf(self, name, test_pred, ss_pred):
 
