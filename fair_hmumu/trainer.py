@@ -195,10 +195,11 @@ class Trainer:
         ind['medium'] = np.logical_and(np.logical_not(ind['low']), np.logical_not(ind['high']))
 
         # now compute the classifier distribution
-        clf_score, clf_hist = {}, {}
+        clf_hist = {}
         for mass_range in ind:
-            clf_score[mass_range] = ss_pred[ind[mass_range]]
-            clf_hist[mass_range], _ = np.histogram(clf_score[mass_range], bins=defs.bins, range=(0, 1))
+            clf_score = ss_pred[ind[mass_range]]
+            weights = self._ss['W'][ind[mass_range]]
+            clf_hist[mass_range], _ = np.histogram(clf_score, weights=weights, bins=defs.bins, range=(0, 1), density=True)
 
         ############
         # fairness
