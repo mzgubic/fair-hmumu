@@ -1,5 +1,6 @@
 import os
 import sklearn
+import numpy as np
 from sklearn.ensemble import GradientBoostingClassifier
 import fair_hmumu.defs as defs
 import fair_hmumu.plot as plot
@@ -169,29 +170,51 @@ class Trainer:
 
     def assess_clf(self, name, test_pred, ss_pred):
 
+        ############
         # roc curves
+        ############
+
         fprs, tprs, _ = sklearn.metrics.roc_curve(self._test['Y'], test_pred, sample_weight=self._test['W'])
         roc_auc = sklearn.metrics.roc_auc_score(self._test['Y'], test_pred, sample_weight=self._test['W'])
         roc = fprs, tprs, roc_auc
 
-        # clf distros
+        ############
+        # clf distros for different mass ranges
+        ############
 
+        mass = self.pre['Z'].inverse_transform(self._ss['Z'])
+
+        # determine the indices of events in a mass range
+        ind = {}
+        ind['low'] = mass < 120
+        ind['high'] = mass > 130
+        ind['medium'] = np.logical_and(np.logical_not(ind['low']), np.logical_not(ind['high']))
+
+        # now compute the classifier distribution
+        clf_score, clf_hist = {}, {}
+        for mass_range in ind:
+            clf_score[mass_range] = mass[ind[mass_range]]
+            clf_hist[mass_range] = np.histogram(clf_score[mass_range], bins=100, range=(110, 160))
+
+        ############
         # fairness
+        ############
 
         # construct the score object
-        score = ClassifierScore(name, roc) 
+        score = ClassifierScore(name, roc, clf_hist)
 
         return score
 
 
 class ClassifierScore(utils.Saveable):
 
-    def __init__(self, name, roc):
+    def __init__(self, name, roc, clf_hist):
 
         self.name = name
         self.fname = '{}_score.pkl'.format(self.name)
         self.roc_curve = roc[:2]
         self.roc_auc = roc[2]
+        self.clf_hist = clf_hist
 
     def __str__(self):
 

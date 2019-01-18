@@ -19,4 +19,8 @@ class PCAWhiteningPreprocessor(Saveable):
     def transform(self, data):
 
         return self.pca.transform(data)
+
+    def inverse_transform(self, data):
+
+        return self.pca.inverse_transform(data)
        
