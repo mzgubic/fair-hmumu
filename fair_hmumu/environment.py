@@ -29,9 +29,9 @@ class TFEnvironment(Saveable):
             tftype = tf.int32 if xyzw == 'Y' else tf.float32
             self._in[xyzw] = tf.placeholder(tftype, shape=(None, batch[xyzw].shape[1]), name='{}_in'.format(xyzw))
 
-        # classifier output and loss
-        _, _ = self.clf.forward(self._in['X'])
-        _ = self.clf.loss(self._in['Y'])
+        # build classifier output and loss
+        self.clf.forward(self._in['X'])
+        self.clf.loss(self._in['Y'])
 
         # adversary output and loss
         # TODO

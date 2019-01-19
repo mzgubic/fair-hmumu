@@ -36,8 +36,6 @@ class Classifier(Model):
 
         self.tf_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name)
 
-        return self.output, self.tf_vars
-
     def loss(self, target):
 
         # build the graph
@@ -46,8 +44,6 @@ class Classifier(Model):
         # loss
         loss = tf.nn.softmax_cross_entropy_with_logits_v2(labels=one_hot, logits=self.output)
         self.loss = tf.math.reduce_mean(loss)
-
-        return self.loss
 
 
 
