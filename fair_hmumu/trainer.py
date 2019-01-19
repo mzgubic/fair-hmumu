@@ -153,10 +153,10 @@ class Trainer:
             if is_final_step or istep%10 == 0:
 
                 # asses classifier performance
-                test_pred = None
-                ss_pred = None 
-                #clf_score = self.assess_clf('{}_{}'.format(self.clf.name, istep), test_pred, ss_pred) 
-                #clf_score.save(os.path.join(self.loc, clf_score.fname))
+                test_pred = self.env.clf_predict(self._test)
+                ss_pred = self.env.clf_predict(self._ss)
+                clf_score = self.assess_clf('{}_{}'.format(self.clf.name, istep), test_pred, ss_pred) 
+                clf_score.save(os.path.join(self.loc, clf_score.fname))
 
                 # plot setup 
                 clf_scores = [self.bcm_score]

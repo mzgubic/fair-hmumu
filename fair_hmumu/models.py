@@ -31,6 +31,10 @@ class Classifier(Model):
             # output layer
             self.output = layers.linear(lay, self.hps['n_classes'])
 
+            # and an extra layer for getting the predictions directly
+            self.predict = tf.reshape(layers.softmax(self.output)[:,1], shape=(-1,1))
+            print(self.predict)
+
         self.tf_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name)
 
         return self.output, self.tf_vars

@@ -60,6 +60,10 @@ class TFEnvironment(Saveable):
         feed_dict = {self._in[xyzw]:batch[xyzw] for xyzw in defs.XYZW}
         # TODO
 
+    def clf_predict(self, data):
+
+        feed_dict = {self._in[xyzw]:data[xyzw] for xyzw in defs.XYZW}
+        return self.sess.run(self.clf.predict, feed_dict=feed_dict)
         
 
 
