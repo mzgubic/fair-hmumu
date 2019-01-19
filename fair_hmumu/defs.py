@@ -20,3 +20,6 @@ n_classes = 2 # sig vs bkg, could be 3 for ggf, vbf, bkg
 bins = 100
 mlow = 110
 mhigh = 160
+
+# misc
+XYZW = ['X', 'Y', 'Z', 'W']

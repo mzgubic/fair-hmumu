@@ -1,4 +1,5 @@
 import tensorflow as tf
+import fair_hmumu.defs as defs
 from fair_hmumu.utils import Saveable
 
 class TFEnvironment(Saveable):
@@ -23,14 +24,14 @@ class TFEnvironment(Saveable):
         print('--- Building computational graph')
 
         # input placeholders
-        self.X_in = tf.placeholder(tf.float32, shape=(None, batch['X'].shape[1]), name='X_in')
-        self.Y_in = tf.placeholder(tf.int32,   shape=(None, batch['Y'].shape[1]), name='Y_in')
-        self.Z_in = tf.placeholder(tf.float32, shape=(None, batch['Z'].shape[1]), name='Z_in')
-        self.W_in = tf.placeholder(tf.float32, shape=(None, batch['W'].shape[1]), name='W_in')
+        self._in = {}
+        for xyzw in defs.XYZW:
+            tftype = tf.int32 if xyzw == 'Y' else tf.float32
+            self._in[xyzw] = tf.placeholder(tftype, shape=(None, batch[xyzw].shape[1]), name='{}_in'.format(xyzw))
 
         # classifier output and loss
-        _, _ = self.clf.forward(self.X_in)
-        _ = self.clf.loss(self.Y_in)
+        _, _ = self.clf.forward(self._in['X'])
+        _ = self.clf.loss(self._in['Y'])
 
         # adversary output and loss
         # TODO
@@ -46,17 +47,17 @@ class TFEnvironment(Saveable):
 
     def pretrain_step(self, batch):
 
-        feed_dict = {self.X_in:batch['X'], self.Y_in:batch['Y'], self.Z_in:batch['Z'], self.W_in:batch['W']}
+        feed_dict = {self._in[xyzw]:batch[xyzw] for xyzw in defs.XYZW}
         self.sess.run(self.opt_C, feed_dict=feed_dict)
 
     def train_step_clf(self, batch):
 
-        feed_dict = {self.X_in:batch['X'], self.Y_in:batch['Y'], self.Z_in:batch['Z'], self.W_in:batch['W']}
+        feed_dict = {self._in[xyzw]:batch[xyzw] for xyzw in defs.XYZW}
         #self.sess.run(self.opt_C, feed_dict=feed_dict) # TODO: opt_C to opt_CA
 
     def train_step_adv(self, batch):
 
-        feed_dict = {self.X_in:batch['X'], self.Y_in:batch['Y'], self.Z_in:batch['Z'], self.W_in:batch['W']}
+        feed_dict = {self._in[xyzw]:batch[xyzw] for xyzw in defs.XYZW}
         # TODO
 
         
