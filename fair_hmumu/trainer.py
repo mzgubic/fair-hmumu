@@ -70,31 +70,6 @@ class Trainer:
             self._test[xz] = self.pre[xz].transform(self._test[xz])
             self._ss[xz] = self.pre[xz].transform(self._ss[xz])
 
-    def _train_benchmarks(self):
-
-        print('--- Training the benchmark {} model'.format(self.bcm_conf['type']))
-
-        # construct hyperparameters
-        bcm_hps = dict(self.bcm_conf)
-        bcm_hps.pop('type')
-
-        # instantiate the model
-        if self.bcm_conf['type'] == 'GBC':
-            self.bcm = GradientBoostingClassifier(**bcm_hps)
-
-        # training set is very unbalanced, fit without the weights
-        self.bcm.fit(self._train['X'], self._train['Y'].ravel())
-
-        print('--- Making benchmark prediction on the test and ss events')
-
-        # predict on the test set
-        test_pred = self.bcm.predict_proba(self._test['X'])[:, 1].reshape(-1, 1)
-        ss_pred = self.bcm.predict_proba(self._ss['X'])[:, 1].reshape(-1, 1)
-
-        # and store the score
-        self.bcm_score = self.assess_clf(self.bcm_conf['type'], test_pred, ss_pred) 
-        self.bcm_score.save(os.path.join(self.loc, self.bcm_score.fname))
-
     def _setup_environment(self):
 
         # set up the tensorflow environment in which the graphs are built and executed
@@ -114,6 +89,12 @@ class Trainer:
 
         # benchmark training
         self._train_benchmarks()
+        self._predict_benchmarks()
+
+        # classifier training
+        self._pretrain_classifier()
+
+    def _pretrain_classifier(self):
 
         print('--- Pretraining for {} steps'.format(self.trn_conf['n_pre']))
 
@@ -128,6 +109,34 @@ class Trainer:
             batch = self.dh.get_batch(defs.jet0)
             batch = self.transform(batch)
             self.env.train_step_adv(batch)
+
+    def _train_benchmarks(self):
+
+        print('--- Training the benchmark {} model'.format(self.bcm_conf['type']))
+
+        # construct hyperparameters
+        bcm_hps = dict(self.bcm_conf)
+        bcm_hps.pop('type')
+
+        # instantiate the model
+        if self.bcm_conf['type'] == 'GBC':
+            self.bcm = GradientBoostingClassifier(**bcm_hps)
+
+        # training set is very unbalanced, fit without the weights
+        self.bcm.fit(self._train['X'], self._train['Y'].ravel())
+
+    def _predict_benchmarks(self):
+
+        print('--- Making benchmark prediction on the test and ss events')
+
+        # predict on the test set
+        test_pred = self.bcm.predict_proba(self._test['X'])[:, 1].reshape(-1, 1)
+        ss_pred = self.bcm.predict_proba(self._ss['X'])[:, 1].reshape(-1, 1)
+
+        # and store the score
+        self.bcm_score = self.assess_clf(self.bcm_conf['type'], test_pred, ss_pred) 
+        self.score_loc = utils.makedir(os.path.join(self.loc, 'scores'.format(self.clf.name)))
+        self.bcm_score.save(os.path.join(self.score_loc, self.bcm_score.fname))
 
     def train(self):
 
@@ -156,13 +165,13 @@ class Trainer:
                 test_pred = self.env.clf_predict(self._test)
                 ss_pred = self.env.clf_predict(self._ss)
                 clf_score = self.assess_clf('{}_{}'.format(self.clf.name, istep), test_pred, ss_pred) 
-                clf_score.save(os.path.join(self.loc, clf_score.fname))
+                clf_score.save(os.path.join(self.score_loc, clf_score.fname))
 
                 # plot setup 
-                clf_scores = [self.bcm_score]
-                labels = [self.bcm_conf['type']]
-                colours = ['k']
-                styles = ['-']
+                clf_scores = [self.bcm_score, clf_score]
+                labels = [self.bcm_conf['type'], self.clf.name]
+                colours = ['k', defs.blue]
+                styles = ['-', '-']
                 unique_id = 'final' if is_final_step else str(istep)
 
                 # make plots
