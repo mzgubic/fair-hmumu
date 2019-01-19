@@ -6,19 +6,26 @@ import fair_hmumu.defs as defs
 
 mpl.rcParams['font.size'] = 15
 
-def losses(losses, labels, colours, styles, loc, unique_id, trn_conf):
+def losses(losses, labels, colours, styles, loc, unique_id, trn_conf, plt_conf):
 
-    # determine some numbers
+    # determine the training steps at which the losses were recorded
     n_pre = trn_conf['n_pre']
-
+    n_epochs = trn_conf['n_epochs']
+    n_skip = plt_conf['n_skip']
+    steps_pre = list(range(1, 2*n_pre+1))
+    steps_tr = [1 + 2*n_pre + i for i in range(n_epochs) if i%n_skip==0 or i==n_epochs-1]
+    steps = steps_pre + steps_tr
+ 
     # plot
     fig, ax = plt.subplots(3, 1, figsize=(7,7), sharex=True)
+    fig.subptitle('Losses')
 
     for i, nn in enumerate(losses):
         loss = losses[nn]
-        ax[i].plot(range(len(loss)), loss, color=colours[i], linestyle=styles[i], label=labels[i])
+        ax[i].plot(steps[:len(loss)], loss, color=colours[i], linestyle=styles[i], label=labels[i])
         # plot the vertical lines showing pretraining
         ax[i].set_ylim(ax[i].get_ylim())
+        ax[i].set_xlim(np.min(steps), 2*n_pre+n_epochs)
         ax[i].plot([n_pre, n_pre], list(ax[i].get_ylim()), 'k:')
         ax[i].plot([2*n_pre, 2*n_pre], list(ax[i].get_ylim()), 'k:')
         ax[i].legend(loc='best')

@@ -22,6 +22,7 @@ class Trainer:
         self.opt_conf = run_conf.get('Optimiser')
         self.trn_conf = run_conf.get('Training')
         self.bcm_conf = run_conf.get('Benchmark')
+        self.plt_conf = run_conf.get('Plotting')
         self.percentiles = [50, 10]
 
         print('------------')
@@ -165,7 +166,7 @@ class Trainer:
 
             # plot progress
             is_final_step = (istep == n_epochs-1)
-            if is_final_step or istep%5 == 0:
+            if is_final_step or istep%self.plt_conf['n_skip'] == 0:
                 self.make_plots(istep)
 
         # write a bash script that can be run to make gifs
@@ -183,6 +184,8 @@ class Trainer:
         clf_score = self.assess_clf('{}_{}'.format(self.clf.name, istep), test_pred, ss_pred) 
         clf_score.save(os.path.join(self.score_loc, clf_score.fname))
 
+        self._assess_losses()
+
         # plot setup 
         clf_scores = [self.bcm_score, clf_score]
         labels = [self.bcm_conf['type'], self.clf.name]
@@ -192,7 +195,7 @@ class Trainer:
 
         # loss plot
         loc = self.loc if is_final_step else utils.makedir(os.path.join(self.loc, 'losses'))
-        plot.losses(self._losses, list(self._losses.keys()), ['r', 'b', 'g'], 3*['-'], loc, unique_id, self.trn_conf)
+        plot.losses(self._losses, list(self._losses.keys()), ['r', 'b', 'g'], 3*['-'], loc, unique_id, self.trn_conf, self.plt_conf)
 
         # roc plot
         loc = self.loc if is_final_step else utils.makedir(os.path.join(self.loc, 'roc_curve'))
@@ -208,9 +211,6 @@ class Trainer:
             plot.mass_shape(clf_scores, perc, labels, colours, styles, loc, unique_id)
 
     def assess_clf(self, name, test_pred, ss_pred):
-
-        # losses
-        self._assess_losses()
 
         # roc curves
         roc = self._get_roc(test_pred)
