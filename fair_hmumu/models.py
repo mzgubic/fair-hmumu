@@ -1,3 +1,4 @@
+import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.layers as layers
 from fair_hmumu.utils import Saveable
@@ -22,14 +23,14 @@ class Classifier(Model):
         with tf.variable_scope(self.name):
 
             # input layer
-            lay = input_layer
+            layer = input_layer
 
             # hidden layers
-            for layer in range(int(self.hps['depth'])):
-                lay = layers.relu(lay, int(self.hps['n_units']))
+            for _ in range(int(self.hps['depth'])):
+                layer = layers.relu(layer, int(self.hps['n_units']))
 
             # output layer
-            self.output = layers.linear(lay, self.hps['n_classes'])
+            self.output = layers.linear(layer, self.hps['n_classes'])
 
             # and an extra layer for getting the predictions directly
             self.proba = tf.reshape(layers.softmax(self.output)[:,1], shape=(-1,1))
@@ -51,7 +52,8 @@ class Adversary(Model):
     @classmethod
     def create(cls, hps):
 
-        type_map = {None:DummyAdversary}
+        type_map = {None:DummyAdversary,
+                    'GaussMixNLL':GaussMixNLLAdversary}
 
         if hps['type'] not in type_map:
             raise ValueError('Unknown Adversary type {}.'.format(hps['type']))
@@ -68,6 +70,65 @@ class DummyAdversary(Adversary):
 
         self.tf_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name)
 
+class GaussMixNLLAdversary(Adversary):
+
+    def make_loss(self, proba, sensitive):
+
+        # store the input placeholders
+        self.proba = proba
+        self.sensitive = sensitive
+
+        # nll network
+        self._make_nll()
+
+        # nll loss
+        self._make_loss()
+
+    def _make_nll(self):
+
+        # for convenience
+        n_components = self.hps['n_components']
+
+        with tf.variable_scope(self.name):
+    
+            # define the input layer
+            layer = self.proba
+
+            # define the output of a network (depends on number of components)
+            for _ in range(self.hps['depth']):
+                layer = layers.relu(layer, self.hps['n_units'])
+
+            # output layer: (mu, sigma, amplitude) for each component
+            output = layers.linear(layer, 3*n_components)
+    
+            # make sure sigmas are positive and pis are normalised 
+            mu = output[:, :n_components]
+            sigma = tf.exp(output[:, n_components:2*n_components])
+            pi = tf.nn.softmax(output[:, 2*n_components:])
+    
+            # interpret the output layers as nll parameters
+            self.nll_pars = tf.concat([mu, sigma, pi], axis=1)
+    
+        self.tf_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name)
+
+    def _make_loss(self):
+
+        # for convenience
+        n_components = self.hps['n_components']
+
+        # build the pdf (max likelihood principle)
+        mu = self.nll_pars[:, :n_components]
+        sigma = self.nll_pars[:, n_components:2*n_components]
+        pi = self.nll_pars[:, 2*n_components:]
+
+        pdf = 0
+        for c in range(n_components):
+            pdf += pi[:, c] * ((1. / np.sqrt(2. * np.pi)) / sigma[:, c] *
+                    tf.math.exp(-(self.sensitive - mu[:, c]) ** 2 / (2. * sigma[:, c] ** 2)))
+
+        # make the loss
+        self.nll = - tf.math.log(pdf)
+        self.loss = tf.reduce_mean(self.nll)
 
 
 
