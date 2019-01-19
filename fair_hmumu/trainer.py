@@ -89,7 +89,7 @@ class Trainer:
     def pretrain(self):
 
         # prepare losses
-        self._losses = {network:[] for network in ['C', 'A', 'CA']}
+        self._losses = {n:[] for n in ['C', 'A', 'CA']}
 
         # benchmark training
         self._train_benchmarks()
@@ -143,6 +143,12 @@ class Trainer:
         self.bcm_score = self.assess_clf(self.bcm_conf['type'], test_pred, ss_pred) 
         self.score_loc = utils.makedir(os.path.join(self.loc, 'clf_scores'.format(self.clf.name)))
         self.bcm_score.save(os.path.join(self.score_loc, self.bcm_score.fname))
+        
+        # save the loss as well (https://www.tensorflow.org/api_docs/python/tf/nn/sigmoid_cross_entropy_with_logits)
+        labels = self._test['Y'].ravel()
+        preds = test_pred.ravel()
+        loss = - labels * np.log(preds) - (1-labels) * np.log(1-preds)
+        self._losses['BCM'] = np.mean(loss)
 
     def train(self):
 
@@ -196,8 +202,7 @@ class Trainer:
 
         # loss plot
         loc = self.loc if is_final_step else utils.makedir(os.path.join(self.loc, 'losses'))
-        loss_kwargs = {'labels':list(self._losses.keys()), 'colours':['r', 'b', 'g']}
-        plot.losses(self._losses, loc, unique_id, self.trn_conf, self.plt_conf, **loss_kwargs)
+        plot.losses(self._losses, loc, unique_id, self.trn_conf, self.plt_conf)
 
         # roc plot
         loc = self.loc if is_final_step else utils.makedir(os.path.join(self.loc, 'roc_curve'))

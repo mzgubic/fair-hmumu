@@ -6,7 +6,7 @@ import fair_hmumu.defs as defs
 
 mpl.rcParams['font.size'] = 15
 
-def losses(losses, loc, unique_id, trn_conf, plt_conf, **kwargs):
+def losses(losses, loc, unique_id, trn_conf, plt_conf):
 
     # determine the training steps at which the losses were recorded
     n_pre = trn_conf['n_pre']
@@ -16,25 +16,38 @@ def losses(losses, loc, unique_id, trn_conf, plt_conf, **kwargs):
     steps_tr = [1 + 2*n_pre + i for i in range(n_epochs) if i%n_skip==0 or i==n_epochs-1]
     steps = steps_pre + steps_tr
 
-    # rename labels
-    rename = {'C':'Classifier', 'A':'Adversary', 'CA':r'Clf. + $ \lambda \times$ Adv.'}
-    labels = [rename[l] for l in kwargs['labels']]
+    # losses, labels, and colours
+    loss_types= ['C', 'A', 'CA']
+    labels = ['Classifier', 'Adversary', r'Clf. + $ \lambda \times$ Adv.']
+    colours = ['r', 'b', 'g']
  
     # plot
     fig, ax = plt.subplots(3, 1, figsize=(7,7), sharex=True)
     fig.suptitle('Losses')
 
-    for i, nn in enumerate(losses):
+    # plot losses
+    for i, nn in enumerate(loss_types):
+
+        # get the losses and plot them
         loss = losses[nn]
-        ax[i].plot(steps[:len(loss)], loss, color=kwargs['colours'][i], linestyle='-', label=labels[i])
-        # plot the vertical lines showing pretraining
+        ax[i].plot(steps[:len(loss)], loss, color=colours[i], linestyle='-', label=labels[i])
+
+        # set the appropriate x and y scales, plot the benchmark loss
         ax[i].set_ylim(ax[i].get_ylim())
         ax[i].set_xlim(np.min(steps), 2*n_pre+n_epochs)
+        if i == 0:
+            ax[i].set_ylim(min(losses['BCM'], ax[i].get_ylim()[0]) - 0.01, ax[i].get_ylim()[1])
+            ax[0].plot([np.min(steps), 2*n_pre+n_epochs], [losses['BCM'], losses['BCM']], 'k--', label='Benchmark')
+
+        # plot the vertical lines showing pretraining steps
         ax[i].plot([n_pre, n_pre], list(ax[i].get_ylim()), 'k:')
         ax[i].plot([2*n_pre, 2*n_pre], list(ax[i].get_ylim()), 'k:')
+
+        # scale and legends
         ax[i].set_xscale('log')
         ax[i].legend(loc='best', fontsize=10)
 
+    # styling
     ax[-1].set_xlabel('Training step')
 
     # save
