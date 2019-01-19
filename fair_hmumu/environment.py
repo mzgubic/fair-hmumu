@@ -53,7 +53,9 @@ class TFEnvironment(Saveable):
     def train_step_clf(self, batch):
 
         feed_dict = {self._in[xyzw]:batch[xyzw] for xyzw in defs.XYZW}
-        #self.sess.run(self.opt_C, feed_dict=feed_dict) # TODO: opt_C to opt_CA
+        self.sess.run(self.opt_C, feed_dict=feed_dict) # TODO: opt_C to opt_CA
+        #################
+        ################
 
     def train_step_adv(self, batch):
 
