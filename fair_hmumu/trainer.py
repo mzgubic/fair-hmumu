@@ -157,51 +157,68 @@ class Trainer:
                 batch = self.transform(batch)
                 self.env.train_step_adv(batch)
 
-            # only plot every ten steps and the final one
+            # plot progress
             is_final_step = (istep == n_epochs-1)
             if is_final_step or istep%10 == 0:
+                self.make_plots(istep)
 
-                # asses classifier performance
-                test_pred = self.env.clf_predict(self._test)
-                ss_pred = self.env.clf_predict(self._ss)
-                clf_score = self.assess_clf('{}_{}'.format(self.clf.name, istep), test_pred, ss_pred) 
-                clf_score.save(os.path.join(self.score_loc, clf_score.fname))
+    def make_plots(self, istep):
 
-                # plot setup 
-                clf_scores = [self.bcm_score, clf_score]
-                labels = [self.bcm_conf['type'], self.clf.name]
-                colours = ['k', defs.blue]
-                styles = ['-', '-']
-                unique_id = 'final' if is_final_step else str(istep)
+        # prepare
+        n_epochs = self.trn_conf['n_epochs']
+        is_final_step = (istep == n_epochs-1)
 
-                # make plots
-                loc = self.loc if is_final_step else utils.makedir(os.path.join(self.loc, 'roc_curve'))
-                plot.roc_curve(clf_scores, labels, colours, styles, loc, unique_id)
+        # assess classifier performance
+        test_pred = self.env.clf_predict(self._test)
+        ss_pred = self.env.clf_predict(self._ss)
+        clf_score = self.assess_clf('{}_{}'.format(self.clf.name, istep), test_pred, ss_pred) 
+        clf_score.save(os.path.join(self.score_loc, clf_score.fname))
 
-                loc = self.loc if is_final_step else utils.makedir(os.path.join(self.loc, 'clf_output'))
-                plot.clf_output(clf_scores, labels, colours, styles, loc, unique_id)
+        # plot setup 
+        clf_scores = [self.bcm_score, clf_score]
+        labels = [self.bcm_conf['type'], self.clf.name]
+        colours = [defs.dark_blue, defs.blue]
+        styles = ['-', '-']
+        unique_id = 'final' if is_final_step else str(istep)
 
-                for perc in self.percentiles:
-                    loc = self.loc if is_final_step else utils.makedir(os.path.join(self.loc, 'mass_shape_{}p'.format(perc)))
-                    plot.mass_shape(clf_scores, perc, labels, colours, styles, loc, unique_id)
+        # roc plot
+        loc = self.loc if is_final_step else utils.makedir(os.path.join(self.loc, 'roc_curve'))
+        plot.roc_curve(clf_scores, labels, colours, styles, loc, unique_id)
+
+        # clf output plot
+        loc = self.loc if is_final_step else utils.makedir(os.path.join(self.loc, 'clf_output'))
+        plot.clf_output(clf_scores, labels, colours, styles, loc, unique_id)
+
+        # mass distro plots
+        for perc in self.percentiles:
+            loc = self.loc if is_final_step else utils.makedir(os.path.join(self.loc, 'mass_shape_{}p'.format(perc)))
+            plot.mass_shape(clf_scores, perc, labels, colours, styles, loc, unique_id)
 
     def assess_clf(self, name, test_pred, ss_pred):
 
-        ############
         # roc curves
-        ############
+        roc = self._get_roc(test_pred)
+
+        # clf distros for different mass ranges
+        clf_hists = self._get_clf_hists(ss_pred)
+
+        # mass distros for different clf percentiles
+        mass_hists = self._get_mass_hists(ss_pred)
+           
+        # return the score object
+        return ClassifierScore(name, roc, clf_hists, mass_hists)
+
+    def _get_roc(self, test_pred):
 
         fprs, tprs, _ = sklearn.metrics.roc_curve(self._test['Y'], test_pred.ravel(), sample_weight=self._test['W'])
         roc_auc = sklearn.metrics.roc_auc_score(self._test['Y'], test_pred.ravel(), sample_weight=self._test['W'])
-        roc = fprs, tprs, roc_auc
 
-        ############
-        # clf distros for different mass ranges
-        ############
+        return fprs, tprs, roc_auc
 
-        mass = self.pre['Z'].inverse_transform(self._ss['Z'])
+    def _get_clf_hists(self, ss_pred):
 
         # determine the indices of events in a mass range
+        mass = self.pre['Z'].inverse_transform(self._ss['Z'])
         ind = {}
         ind['low'] = mass < 120
         ind['high'] = mass > 130
@@ -214,9 +231,12 @@ class Trainer:
             weights = self._ss['W'][ind[mass_range]]
             clf_hists[mass_range], _ = np.histogram(clf_score, weights=weights, bins=defs.bins, range=(0, 1), density=True)
 
-        ############
-        # fairness
-        ############
+        return clf_hists
+
+    def _get_mass_hists(self, ss_pred):
+
+        # get real mass values
+        mass = self.pre['Z'].inverse_transform(self._ss['Z'])
 
         mass_hists = {}
         for perc in self.percentiles:
@@ -232,11 +252,8 @@ class Trainer:
 
             # pack up in dict
             mass_hists[perc] = sel_hist, full_hist
-            
-        # construct the score object
-        score = ClassifierScore(name, roc, clf_hists, mass_hists)
 
-        return score
+        return mass_hists
 
 
 class ClassifierScore(utils.Saveable):
