@@ -6,7 +6,7 @@ import fair_hmumu.defs as defs
 
 mpl.rcParams['font.size'] = 15
 
-def losses(losses, labels, colours, styles, loc, unique_id, trn_conf, plt_conf):
+def losses(losses, loc, unique_id, trn_conf, plt_conf, **kwargs):
 
     # determine the training steps at which the losses were recorded
     n_pre = trn_conf['n_pre']
@@ -18,7 +18,7 @@ def losses(losses, labels, colours, styles, loc, unique_id, trn_conf, plt_conf):
 
     # rename labels
     rename = {'C':'Classifier', 'A':'Adversary', 'CA':r'Clf. + $ \lambda \times$ Adv.'}
-    labels = [rename[l] for l in labels]
+    labels = [rename[l] for l in kwargs['labels']]
  
     # plot
     fig, ax = plt.subplots(3, 1, figsize=(7,7), sharex=True)
@@ -26,14 +26,14 @@ def losses(losses, labels, colours, styles, loc, unique_id, trn_conf, plt_conf):
 
     for i, nn in enumerate(losses):
         loss = losses[nn]
-        ax[i].plot(steps[:len(loss)], loss, color=colours[i], linestyle=styles[i], label=labels[i])
+        ax[i].plot(steps[:len(loss)], loss, color=kwargs['colours'][i], linestyle='-', label=labels[i])
         # plot the vertical lines showing pretraining
         ax[i].set_ylim(ax[i].get_ylim())
         ax[i].set_xlim(np.min(steps), 2*n_pre+n_epochs)
         ax[i].plot([n_pre, n_pre], list(ax[i].get_ylim()), 'k:')
         ax[i].plot([2*n_pre, 2*n_pre], list(ax[i].get_ylim()), 'k:')
         ax[i].set_xscale('log')
-        ax[i].legend(loc='best')
+        ax[i].legend(loc='best', fontsize=10)
 
     ax[-1].set_xlabel('Training step')
 
@@ -44,14 +44,14 @@ def losses(losses, labels, colours, styles, loc, unique_id, trn_conf, plt_conf):
     print(path)
 
 
-def roc_curve(clf_scores, labels, colours, styles, loc, unique_id):
+def roc_curve(clf_scores, loc, unique_id, **kwargs):
 
     # plot
     fig, ax = plt.subplots(figsize=(7,7))
     for i, score in enumerate(clf_scores):
         fprs, tprs = score.roc_curve
-        ax.plot(1-fprs, tprs, color=colours[i], linestyle=styles[i], label=labels[i])
-    ax.legend(loc='best')
+        ax.plot(1-fprs, tprs, color=kwargs['colours'][i], linestyle=kwargs['styles'][i], label=kwargs['labels'][i])
+    ax.legend(loc='best', fontsize=10)
     ax.set_xlabel('Background rejection')
     ax.set_ylabel('Signal efficiency')
     
@@ -62,7 +62,7 @@ def roc_curve(clf_scores, labels, colours, styles, loc, unique_id):
     print(path)
 
 
-def clf_output(clf_scores, labels, colours, styles, loc, unique_id):
+def clf_output(clf_scores, loc, unique_id, **kwargs):
 
     # compute the centres of the bins
     edges = np.linspace(0, 1, defs.bins+1)
@@ -81,22 +81,22 @@ def clf_output(clf_scores, labels, colours, styles, loc, unique_id):
         clf_hists = score.clf_hists
 
         # common keyword arguments
-        kwargs = {'bins':defs.bins, 'color':colours[i], 'histtype':'step', 'range':(0,1)}
+        h_kwargs = {'bins':defs.bins, 'color':kwargs['colours'][i], 'histtype':'step', 'range':(0,1)}
 
         # plot all mass ranges
         for mass_range, lstyle in zip(['low', 'medium', 'high'], [':', '-', '--']):
 
             # top panel
             mass_comment = {'low':'< 120 GeV', 'medium':'120 < 130 GeV', 'high':'> 130 GeV'}
-            label = '{} ({})'.format(labels[i], mass_comment[mass_range])
-            ax[0].hist(centres, weights=clf_hists[mass_range], linestyle=lstyle, label=label, **kwargs)
+            label = '{} ({})'.format(kwargs['labels'][i], mass_comment[mass_range])
+            ax[0].hist(centres, weights=clf_hists[mass_range], linestyle=lstyle, label=label, **h_kwargs)
 
             # bottom panel
             with np.errstate(divide='ignore', invalid='ignore'):
                 ratio = clf_hists[mass_range]/clf_hists['medium']
             ratio[ratio == np.inf] = 0
             ratio = np.nan_to_num(ratio)
-            ax[1].hist(centres, weights=ratio, linestyle=lstyle, **kwargs)
+            ax[1].hist(centres, weights=ratio, linestyle=lstyle, **h_kwargs)
 
     ax[0].legend(loc='best', fontsize=10)
     ax[0].set_xlim(0,1)
@@ -112,7 +112,7 @@ def clf_output(clf_scores, labels, colours, styles, loc, unique_id):
     print(path)
 
 
-def mass_shape(clf_scores, perc, labels, colours, styles, loc, unique_id):
+def mass_shape(clf_scores, perc, loc, unique_id, **kwargs):
 
     # compute the centres of the bins
     edges = np.linspace(defs.mlow, defs.mhigh, defs.bins+1)
@@ -131,18 +131,18 @@ def mass_shape(clf_scores, perc, labels, colours, styles, loc, unique_id):
         sel_hist, full_hist = score.mass_hists[perc]
 
         # common keyword arguments
-        kwargs = {'bins':defs.bins, 'color':colours[i], 'histtype':'step', 'range':(defs.mlow, defs.mhigh)}
+        h_kwargs = {'bins':defs.bins, 'color':kwargs['colours'][i], 'histtype':'step', 'range':(defs.mlow, defs.mhigh)}
 
         # top panel
-        label = '{} (best {}%)'.format(labels[i], perc)
-        ax[0].hist(centres, weights=sel_hist, linestyle=styles[i], label=label, **kwargs)
+        label = '{} (best {}%)'.format(kwargs['labels'][i], perc)
+        ax[0].hist(centres, weights=sel_hist, linestyle=kwargs['styles'][i], label=label, **h_kwargs)
 
         # bottom panel
         with np.errstate(divide='ignore', invalid='ignore'):
             ratio = sel_hist/full_hist
         ratio[ratio == np.inf] = 0
         ratio = np.nan_to_num(ratio)
-        ax[1].hist(centres, weights=ratio, linestyle=styles[i], **kwargs)
+        ax[1].hist(centres, weights=ratio, linestyle=kwargs['styles'][i], **h_kwargs)
 
     ax[1].plot([defs.mlow, defs.mhigh], [perc/100., perc/100.], 'k:')
     ax[0].legend(loc='best', fontsize=10)

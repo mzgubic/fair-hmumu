@@ -191,24 +191,26 @@ class Trainer:
         labels = [self.bcm_conf['type'], self.clf.name]
         colours = [defs.dark_blue, defs.blue]
         styles = ['-', '-']
+        kwargs = {'labels':labels, 'colours':colours, 'styles':styles}
         unique_id = 'final' if is_final_step else str(istep)
 
         # loss plot
         loc = self.loc if is_final_step else utils.makedir(os.path.join(self.loc, 'losses'))
-        plot.losses(self._losses, list(self._losses.keys()), ['r', 'b', 'g'], 3*['-'], loc, unique_id, self.trn_conf, self.plt_conf)
+        loss_kwargs = {'labels':list(self._losses.keys()), 'colours':['r', 'b', 'g']}
+        plot.losses(self._losses, loc, unique_id, self.trn_conf, self.plt_conf, **loss_kwargs)
 
         # roc plot
         loc = self.loc if is_final_step else utils.makedir(os.path.join(self.loc, 'roc_curve'))
-        plot.roc_curve(clf_scores, labels, colours, styles, loc, unique_id)
+        plot.roc_curve(clf_scores, loc, unique_id, **kwargs)
 
         # clf output plot
         loc = self.loc if is_final_step else utils.makedir(os.path.join(self.loc, 'clf_output'))
-        plot.clf_output(clf_scores, labels, colours, styles, loc, unique_id)
+        plot.clf_output(clf_scores, loc, unique_id, **kwargs)
 
         # mass distro plots
         for perc in self.percentiles:
             loc = self.loc if is_final_step else utils.makedir(os.path.join(self.loc, 'mass_shape_{}p'.format(perc)))
-            plot.mass_shape(clf_scores, perc, labels, colours, styles, loc, unique_id)
+            plot.mass_shape(clf_scores, perc, loc, unique_id, **kwargs)
 
     def assess_clf(self, name, test_pred, ss_pred):
 
