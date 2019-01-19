@@ -6,6 +6,32 @@ import fair_hmumu.defs as defs
 
 mpl.rcParams['font.size'] = 15
 
+def losses(losses, labels, colours, styles, loc, unique_id, trn_conf):
+
+    # determine some numbers
+    n_pre = trn_conf['n_pre']
+
+    # plot
+    fig, ax = plt.subplots(3, 1, figsize=(7,7), sharex=True)
+
+    for i, nn in enumerate(losses):
+        loss = losses[nn]
+        ax[i].plot(range(len(loss)), loss, color=colours[i], linestyle=styles[i], label=labels[i])
+        # plot the vertical lines showing pretraining
+        ax[i].set_ylim(ax[i].get_ylim())
+        ax[i].plot([n_pre, n_pre], list(ax[i].get_ylim()), 'k:')
+        ax[i].plot([2*n_pre, 2*n_pre], list(ax[i].get_ylim()), 'k:')
+        ax[i].legend(loc='best')
+
+    ax[-1].set_xlabel('Training step')
+
+    # save
+    path = os.path.join(loc, 'losses_{}.pdf'.format(unique_id))
+    plt.savefig(path)
+    plt.close(fig)
+    print(path)
+
+
 def roc_curve(clf_scores, labels, colours, styles, loc, unique_id):
 
     # plot

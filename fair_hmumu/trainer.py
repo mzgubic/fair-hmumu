@@ -87,6 +87,9 @@ class Trainer:
 
     def pretrain(self):
 
+        # prepare losses
+        self._losses = {network:[] for network in ['C', 'A', 'CA']}
+
         # benchmark training
         self._train_benchmarks()
         self._predict_benchmarks()
@@ -103,12 +106,14 @@ class Trainer:
             batch = self.dh.get_batch(defs.jet0)
             batch = self.transform(batch)
             self.env.pretrain_step(batch)
+            self._assess_losses()
 
         # pretrain the adversary
         for _ in range(self.trn_conf['n_pre']):
             batch = self.dh.get_batch(defs.jet0)
             batch = self.transform(batch)
             self.env.train_step_adv(batch)
+            self._assess_losses()
 
     def _train_benchmarks(self):
 
@@ -166,28 +171,6 @@ class Trainer:
         # write a bash script that can be run to make gifs
         self._gif()
 
-    def _gif(self):
-
-        gifs = ['roc_curve', 'clf_output']
-        gifs += ['mass_shape_{}p'.format(p) for p in self.percentiles]
-
-        script = os.path.join(self.loc, 'make_gifs.sh')
-
-        with open(script, 'w') as f:
-            for gif in gifs:
-    
-                # convert frames to png
-                f.write('mogrify -density 100 -format png {}/*.pdf\n'.format(gif))
-
-                # make the gif
-                png_loc = os.path.join(self.loc, gif)
-                pngs = ' '.join([os.path.join(png_loc, fname[:-4]+'.png') for fname in os.listdir(png_loc)])
-                gif_path = os.path.join(self.loc, '{}.gif'.format(gif))
-                f.write('convert -colors 32 -loop 0 -delay 10 {i} {o}\n'.format(i=pngs, o=gif_path))
-
-                # rm pngs to save disk space
-                f.write('rm {}/*.png\n\n'.format(gif))
-
     def make_plots(self, istep):
 
         # prepare
@@ -207,6 +190,10 @@ class Trainer:
         styles = ['-', '-']
         unique_id = 'final' if is_final_step else str(istep)
 
+        # loss plot
+        loc = self.loc if is_final_step else utils.makedir(os.path.join(self.loc, 'losses'))
+        plot.losses(self._losses, list(self._losses.keys()), ['r', 'b', 'g'], 3*['-'], loc, unique_id, self.trn_conf)
+
         # roc plot
         loc = self.loc if is_final_step else utils.makedir(os.path.join(self.loc, 'roc_curve'))
         plot.roc_curve(clf_scores, labels, colours, styles, loc, unique_id)
@@ -222,6 +209,9 @@ class Trainer:
 
     def assess_clf(self, name, test_pred, ss_pred):
 
+        # losses
+        self._assess_losses()
+
         # roc curves
         roc = self._get_roc(test_pred)
 
@@ -233,6 +223,12 @@ class Trainer:
            
         # return the score object
         return ClassifierScore(name, roc, clf_hists, mass_hists)
+
+    def _assess_losses(self):
+
+        self._losses['C'].append(self.env.clf_loss(self._test))
+        self._losses['A'].append(0)
+        self._losses['CA'].append(0)
 
     def _get_roc(self, test_pred):
 
@@ -280,6 +276,28 @@ class Trainer:
             mass_hists[perc] = sel_hist, full_hist
 
         return mass_hists
+
+    def _gif(self):
+
+        gifs = ['roc_curve', 'clf_output']
+        gifs += ['mass_shape_{}p'.format(p) for p in self.percentiles]
+
+        script = os.path.join(self.loc, 'make_gifs.sh')
+
+        with open(script, 'w') as f:
+            for gif in gifs:
+    
+                # convert frames to png
+                f.write('mogrify -density 100 -format png {}/*.pdf\n'.format(gif))
+
+                # make the gif
+                png_loc = os.path.join(self.loc, gif)
+                pngs = ' '.join([os.path.join(png_loc, fname[:-4]+'.png') for fname in os.listdir(png_loc)])
+                gif_path = os.path.join(self.loc, '{}.gif'.format(gif))
+                f.write('convert -colors 32 -loop 0 -delay 10 {i} {o}\n'.format(i=pngs, o=gif_path))
+
+                # rm pngs to save disk space
+                f.write('rm {}/*.png\n\n'.format(gif))
 
 
 class ClassifierScore(utils.Saveable):
