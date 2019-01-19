@@ -7,7 +7,7 @@ class Model(Saveable):
 
     def __init__(self, hps):
 
-        self.name = hps['type']
+        self.name = str(hps['type'])
         self.hps = hps
 
     def __str__(self):
@@ -16,7 +16,7 @@ class Model(Saveable):
 
 class Classifier(Model):
     
-    def forward(self, input_layer):
+    def make_forward_pass(self, input_layer):
 
         # build the graph in the scope
         with tf.variable_scope(self.name):
@@ -32,11 +32,11 @@ class Classifier(Model):
             self.output = layers.linear(lay, self.hps['n_classes'])
 
             # and an extra layer for getting the predictions directly
-            self.predict = tf.reshape(layers.softmax(self.output)[:,1], shape=(-1,1))
+            self.proba = tf.reshape(layers.softmax(self.output)[:,1], shape=(-1,1))
 
         self.tf_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name)
 
-    def loss(self, target):
+    def make_loss(self, target):
 
         # build the graph
         one_hot = tf.one_hot(target, depth=self.hps['n_classes'])
@@ -48,14 +48,25 @@ class Classifier(Model):
 
 class Adversary(Model):
 
-    def forward(self, input_layer):
+    @classmethod
+    def create(cls, hps):
 
-        self.predict = tf.reshape(input_layer, shape=(-1))
-        self.tf_vars = []
+        type_map = {None:DummyAdversary}
 
-    def loss(self, target):
+        if hps['type'] not in type_map:
+            raise ValueError('Unknown Adversary type {}.'.format(hps['type']))
 
-        self.loss = tf.constant(0, dtype=tf.float32)
+        return type_map[hps['type']](hps)
+
+class DummyAdversary(Adversary):
+
+    def make_loss(self, _, __):
+
+        with tf.variable_scope(self.name):
+            dummy_var = tf.Variable(0.1, name='dummy')
+            self.loss = tf.math.abs(dummy_var) # i.e. goes to zero
+
+        self.tf_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name)
 
 
 

@@ -18,7 +18,7 @@ class Trainer:
         # configurations
         self.loc = run_conf.loc
         self.clf = models.Classifier(run_conf.get('Classifier'))
-        self.adv = models.Adversary(run_conf.get('Adversary'))
+        self.adv = models.Adversary.create(run_conf.get('Adversary'))
         self.opt_conf = run_conf.get('Optimiser')
         self.trn_conf = run_conf.get('Training')
         self.bcm_conf = run_conf.get('Benchmark')
@@ -53,8 +53,8 @@ class Trainer:
 
         # load 
         self._train = self.dh.get_train(defs.jet0) # TODO: jet channels
-        self._test = self.dh.get_test(defs.jet0) # TODO: jet channels
-        self._ss = self.dh.get_ss(defs.jet0) # TODO: jet channels
+        self._test = self.dh.get_test(defs.jet0)
+        self._ss = self.dh.get_ss(defs.jet0)
 
     def _fit_preprocessing(self):
 
@@ -234,7 +234,7 @@ class Trainer:
     def _assess_losses(self):
 
         self._losses['C'].append(self.env.clf_loss(self._test))
-        self._losses['A'].append(0)
+        self._losses['A'].append(self.env.adv_loss(self._test))
         self._losses['CA'].append(0)
 
     def _get_roc(self, test_pred):

@@ -30,14 +30,15 @@ class TFEnvironment(Saveable):
             self._in[xyzw] = tf.placeholder(tftype, shape=(None, batch[xyzw].shape[1]), name='{}_in'.format(xyzw))
 
         # build classifier output and loss
-        self.clf.forward(self._in['X'])
-        self.clf.loss(self._in['Y'])
+        self.clf.make_forward_pass(self._in['X'])
+        self.clf.make_loss(self._in['Y'])
 
-        # adversary output and loss
-        # TODO
+        # adversary loss
+        self.adv.make_loss(self.clf.proba, self._in['Z'])
 
         # optimisers
         self.opt_C = tf.train.AdamOptimizer(**self.opt_conf).minimize(self.clf.loss, var_list=self.clf.tf_vars)
+        self.opt_A = tf.train.AdamOptimizer(**self.opt_conf).minimize(self.adv.loss, var_list=self.adv.tf_vars)
 
     def initialise_variables(self):
 
@@ -60,17 +61,22 @@ class TFEnvironment(Saveable):
     def train_step_adv(self, batch):
 
         feed_dict = {self._in[xyzw]:batch[xyzw] for xyzw in defs.XYZW}
-        # TODO
+        self.sess.run(self.opt_A, feed_dict=feed_dict)
 
     def clf_loss(self, data):
         
         feed_dict = {self._in[xyzw]:data[xyzw] for xyzw in defs.XYZW}
         return self.sess.run(self.clf.loss, feed_dict=feed_dict)
 
+    def adv_loss(self, data):
+
+        feed_dict = {self._in[xyzw]:data[xyzw] for xyzw in defs.XYZW}
+        return self.sess.run(self.adv.loss, feed_dict=feed_dict)
+
     def clf_predict(self, data):
 
         feed_dict = {self._in[xyzw]:data[xyzw] for xyzw in defs.XYZW}
-        return self.sess.run(self.clf.predict, feed_dict=feed_dict)
+        return self.sess.run(self.clf.proba, feed_dict=feed_dict)
         
 
 
