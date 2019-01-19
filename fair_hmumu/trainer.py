@@ -17,8 +17,8 @@ class Trainer:
 
         # configurations
         self.loc = run_conf.loc
-        self.clf = models.Classifier('DNN', run_conf.get('Classifier'))
-        self.adv = None #TODO
+        self.clf = models.Classifier(run_conf.get('Classifier'))
+        self.adv = models.Adversary(run_conf.get('Adversary'))
         self.opt_conf = run_conf.get('Optimiser')
         self.trn_conf = run_conf.get('Training')
         self.bcm_conf = run_conf.get('Benchmark')

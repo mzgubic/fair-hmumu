@@ -5,9 +5,9 @@ from fair_hmumu.utils import Saveable
 
 class Model(Saveable):
 
-    def __init__(self, name, hps):
+    def __init__(self, hps):
 
-        self.name = name
+        self.name = hps['type']
         self.hps = hps
 
     def __str__(self):
@@ -44,6 +44,19 @@ class Classifier(Model):
         # loss
         loss = tf.nn.softmax_cross_entropy_with_logits_v2(labels=one_hot, logits=self.output)
         self.loss = tf.math.reduce_mean(loss)
+
+
+class Adversary(Model):
+
+    def forward(self, input_layer):
+
+        self.predict = tf.reshape(input_layer, shape=(-1))
+        self.tf_vars = []
+
+    def loss(self, target):
+
+        self.loss = tf.constant(0, dtype=tf.float32)
+
 
 
 
