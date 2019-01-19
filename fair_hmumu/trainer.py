@@ -171,6 +171,7 @@ class Trainer:
                 self.env.train_step_adv(batch)
 
             # plot progress
+            self._assess_losses()
             is_final_step = (istep == n_epochs-1)
             if is_final_step or istep%self.plt_conf['n_skip'] == 0:
                 self.make_plots(istep)
@@ -189,8 +190,6 @@ class Trainer:
         ss_pred = self.env.clf_predict(self._ss)
         clf_score = self.assess_clf('{}_{}'.format(self.clf.name, istep), test_pred, ss_pred) 
         clf_score.save(os.path.join(self.score_loc, clf_score.fname))
-
-        self._assess_losses()
 
         # plot setup 
         clf_scores = [self.bcm_score, clf_score]

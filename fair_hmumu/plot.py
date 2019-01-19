@@ -13,7 +13,7 @@ def losses(losses, loc, unique_id, trn_conf, plt_conf):
     n_epochs = trn_conf['n_epochs']
     n_skip = plt_conf['n_skip']
     steps_pre = list(range(1, 2*n_pre+1))
-    steps_tr = [1 + 2*n_pre + i for i in range(n_epochs) if i%n_skip==0 or i==n_epochs-1]
+    steps_tr = [1 + 2*n_pre + i for i in range(n_epochs)]
     steps = steps_pre + steps_tr
 
     # losses, labels, and colours
