@@ -135,14 +135,15 @@ class Trainer:
 
         # and store the score
         self.bcm_score = self.assess_clf(self.bcm_conf['type'], test_pred, ss_pred) 
-        self.score_loc = utils.makedir(os.path.join(self.loc, 'scores'.format(self.clf.name)))
+        self.score_loc = utils.makedir(os.path.join(self.loc, 'clf_scores'.format(self.clf.name)))
         self.bcm_score.save(os.path.join(self.score_loc, self.bcm_score.fname))
 
     def train(self):
 
         print('--- Training for {} steps'.format(self.trn_conf['n_epochs']))
-    
+
         n_epochs = self.trn_conf['n_epochs']
+
         for istep in range(n_epochs):
             
             # train the classifier
@@ -159,8 +160,33 @@ class Trainer:
 
             # plot progress
             is_final_step = (istep == n_epochs-1)
-            if is_final_step or istep%10 == 0:
+            if is_final_step or istep%5 == 0:
                 self.make_plots(istep)
+
+        # write a bash script that can be run to make gifs
+        self._gif()
+
+    def _gif(self):
+
+        gifs = ['roc_curve', 'clf_output']
+        gifs += ['mass_shape_{}p'.format(p) for p in self.percentiles]
+
+        script = os.path.join(self.loc, 'make_gifs.sh')
+
+        with open(script, 'w') as f:
+            for gif in gifs:
+    
+                # convert frames to png
+                f.write('mogrify -density 100 -format png {}/*.pdf\n'.format(gif))
+
+                # make the gif
+                png_loc = os.path.join(self.loc, gif)
+                pngs = ' '.join([os.path.join(png_loc, fname[:-4]+'.png') for fname in os.listdir(png_loc)])
+                gif_path = os.path.join(self.loc, '{}.gif'.format(gif))
+                f.write('convert -colors 32 -loop 0 -delay 10 {i} {o}\n'.format(i=pngs, o=gif_path))
+
+                # rm pngs to save disk space
+                f.write('rm {}/*.png\n\n'.format(gif))
 
     def make_plots(self, istep):
 

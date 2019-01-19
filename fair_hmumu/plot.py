@@ -20,6 +20,7 @@ def roc_curve(clf_scores, labels, colours, styles, loc, unique_id):
     # save
     path = os.path.join(loc, 'roc_curve_{}.pdf'.format(unique_id))
     plt.savefig(path)
+    plt.close(fig)
     print(path)
 
 
@@ -69,6 +70,7 @@ def clf_output(clf_scores, labels, colours, styles, loc, unique_id):
     # save
     path = os.path.join(loc, 'clf_output_{}.pdf'.format(unique_id))
     plt.savefig(path)
+    plt.close(fig)
     print(path)
 
 
@@ -114,6 +116,7 @@ def mass_shape(clf_scores, perc, labels, colours, styles, loc, unique_id):
     # save
     path = os.path.join(loc, 'mass_shape_{}p_{}.pdf'.format(perc, unique_id))
     plt.savefig(path)
+    plt.close(fig)
     print(path)
 
    
