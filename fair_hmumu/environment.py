@@ -36,9 +36,14 @@ class TFEnvironment(Saveable):
         # adversary loss
         self.adv.make_loss(self.clf.proba, self._in['Z'])
 
+        # combined loss
+        self.CA_loss = self.clf.loss - self.opt_conf['lambda'] * self.adv.loss
+
         # optimisers
-        self.opt_C = tf.train.AdamOptimizer(**self.opt_conf).minimize(self.clf.loss, var_list=self.clf.tf_vars)
-        self.opt_A = tf.train.AdamOptimizer(**self.opt_conf).minimize(self.adv.loss, var_list=self.adv.tf_vars)
+        adam_hps = {key:self.opt_conf[key] for key in self.opt_conf if key not in ['lambda']}
+        self.opt_C = tf.train.AdamOptimizer(**adam_hps).minimize(self.clf.loss, var_list=self.clf.tf_vars)
+        self.opt_A = tf.train.AdamOptimizer(**adam_hps).minimize(self.adv.loss, var_list=self.adv.tf_vars)
+        self.opt_CA = tf.train.AdamOptimizer(**adam_hps).minimize(self.CA_loss, var_list=self.clf.tf_vars)
 
     def initialise_variables(self):
 
@@ -54,24 +59,17 @@ class TFEnvironment(Saveable):
     def train_step_clf(self, batch):
 
         feed_dict = {self._in[xyzw]:batch[xyzw] for xyzw in defs.XYZW}
-        self.sess.run(self.opt_C, feed_dict=feed_dict) # TODO: opt_C to opt_CA
-        #################
-        ################
+        self.sess.run(self.opt_CA, feed_dict=feed_dict)
 
     def train_step_adv(self, batch):
 
         feed_dict = {self._in[xyzw]:batch[xyzw] for xyzw in defs.XYZW}
         self.sess.run(self.opt_A, feed_dict=feed_dict)
 
-    def clf_loss(self, data):
+    def losses(self, data):
         
         feed_dict = {self._in[xyzw]:data[xyzw] for xyzw in defs.XYZW}
-        return self.sess.run(self.clf.loss, feed_dict=feed_dict)
-
-    def adv_loss(self, data):
-
-        feed_dict = {self._in[xyzw]:data[xyzw] for xyzw in defs.XYZW}
-        return self.sess.run(self.adv.loss, feed_dict=feed_dict)
+        return self.sess.run([self.clf.loss, self.adv.loss, self.CA_loss], feed_dict=feed_dict)
 
     def clf_predict(self, data):
 

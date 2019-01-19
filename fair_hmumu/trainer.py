@@ -233,9 +233,11 @@ class Trainer:
 
     def _assess_losses(self):
 
-        self._losses['C'].append(self.env.clf_loss(self._test))
-        self._losses['A'].append(self.env.adv_loss(self._test))
-        self._losses['CA'].append(0)
+        C, A, CA = self.env.losses(self._test)
+
+        self._losses['C'].append(C)
+        self._losses['A'].append(A)
+        self._losses['CA'].append(CA)
 
     def _get_roc(self, test_pred):
 
