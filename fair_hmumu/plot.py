@@ -15,10 +15,14 @@ def losses(losses, labels, colours, styles, loc, unique_id, trn_conf, plt_conf):
     steps_pre = list(range(1, 2*n_pre+1))
     steps_tr = [1 + 2*n_pre + i for i in range(n_epochs) if i%n_skip==0 or i==n_epochs-1]
     steps = steps_pre + steps_tr
+
+    # rename labels
+    rename = {'C':'Classifier', 'A':'Adversary', 'CA':r'Clf. + $ \lambda \times$ Adv.'}
+    labels = [rename[l] for l in labels]
  
     # plot
     fig, ax = plt.subplots(3, 1, figsize=(7,7), sharex=True)
-    fig.subptitle('Losses')
+    fig.suptitle('Losses')
 
     for i, nn in enumerate(losses):
         loss = losses[nn]
@@ -28,6 +32,7 @@ def losses(losses, labels, colours, styles, loc, unique_id, trn_conf, plt_conf):
         ax[i].set_xlim(np.min(steps), 2*n_pre+n_epochs)
         ax[i].plot([n_pre, n_pre], list(ax[i].get_ylim()), 'k:')
         ax[i].plot([2*n_pre, 2*n_pre], list(ax[i].get_ylim()), 'k:')
+        ax[i].set_xscale('log')
         ax[i].legend(loc='best')
 
     ax[-1].set_xlabel('Training step')
