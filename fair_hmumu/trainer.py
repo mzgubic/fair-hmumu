@@ -48,6 +48,7 @@ class Trainer:
         # data handling
         production = self.trn_conf['production']
         features = ['Z_PT', 'Muons_CosThetaStar']
+        features = ['Muons_Eta_Lead', 'Muons_Eta_Sub', 'Muons_Phi_Lead', 'Muons_Phi_Sub', 'Muons_PT_Lead', 'Muons_PT_Sub']
         entrystop = self.trn_conf['entrystop']
         self.dh = DatasetHandler(production, features, entrystop=entrystop, test_frac=0.25, seed=42)
 
