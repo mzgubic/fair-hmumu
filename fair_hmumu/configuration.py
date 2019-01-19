@@ -56,7 +56,7 @@ class Configuration:
             for option in self.config[section]:
 
                 value = self.get(section, option)
-                fixed = type(value) in [str, float, int]
+                fixed = not type(value) == list
 
                 if which == 'all':
                     d[section][option] = value
