@@ -44,7 +44,7 @@ class Trainer:
         self._setup_environment()
 
     def _load_data(self):
- 
+
         # data handling
         production = self.trn_conf['production']
         features = ['Z_PT', 'Muons_CosThetaStar']
@@ -52,7 +52,7 @@ class Trainer:
         entrystop = self.trn_conf['entrystop']
         self.dh = DatasetHandler(production, features, entrystop=entrystop, test_frac=0.25, seed=42)
 
-        # load 
+        # load
         self._train = self.dh.get_train(defs.jet0) # TODO: jet channels
         self._test = self.dh.get_test(defs.jet0)
         self._ss = self.dh.get_ss(defs.jet0)
@@ -141,10 +141,10 @@ class Trainer:
         ss_pred = self.bcm.predict_proba(self._ss['X'])[:, 1].reshape(-1, 1)
 
         # and store the score
-        self.bcm_score = self.assess_clf(self.bcm_conf['type'], test_pred, ss_pred) 
+        self.bcm_score = self.assess_clf(self.bcm_conf['type'], test_pred, ss_pred)
         self.score_loc = utils.makedir(os.path.join(self.loc, 'clf_scores'.format(self.clf.name)))
         self.bcm_score.save(os.path.join(self.score_loc, self.bcm_score.fname))
-        
+
         # save the loss as well (https://www.tensorflow.org/api_docs/python/tf/nn/sigmoid_cross_entropy_with_logits)
         labels = self._test['Y'].ravel()
         preds = test_pred.ravel()
@@ -158,7 +158,7 @@ class Trainer:
         n_epochs = self.trn_conf['n_epochs']
 
         for istep in range(n_epochs):
-            
+
             # train the classifier
             for _ in range(self.trn_conf['n_clf']):
                 batch = self.dh.get_batch(defs.jet0)
@@ -189,10 +189,10 @@ class Trainer:
         # assess classifier performance
         test_pred = self.env.clf_predict(self._test)
         ss_pred = self.env.clf_predict(self._ss)
-        clf_score = self.assess_clf('{}_{}'.format(self.clf.name, istep), test_pred, ss_pred) 
+        clf_score = self.assess_clf('{}_{}'.format(self.clf.name, istep), test_pred, ss_pred)
         clf_score.save(os.path.join(self.score_loc, clf_score.fname))
 
-        # plot setup 
+        # plot setup
         clf_scores = [self.bcm_score, clf_score]
         labels = [self.bcm_conf['type'], self.clf.name]
         colours = [defs.dark_blue, defs.blue]
@@ -227,7 +227,7 @@ class Trainer:
 
         # mass distros for different clf percentiles
         mass_hists = self._get_mass_hists(ss_pred)
-           
+
         # return the score object
         return ClassifierScore(name, roc, clf_hists, mass_hists)
 
@@ -295,7 +295,7 @@ class Trainer:
 
         with open(script, 'w') as f:
             for gif in gifs:
-    
+
                 # convert frames to png
                 f.write('mogrify -density 100 -format png {}/*.pdf\n'.format(gif))
 
