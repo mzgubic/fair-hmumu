@@ -290,7 +290,7 @@ class Trainer:
 
     def _gif(self):
 
-        gifs = ['roc_curve', 'clf_output']
+        gifs = ['roc_curve', 'clf_output', 'losses']
         gifs += ['mass_shape_{}p'.format(p) for p in self.percentiles]
 
         script = os.path.join(self.loc, 'make_gifs.sh')

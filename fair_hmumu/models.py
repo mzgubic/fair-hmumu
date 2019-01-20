@@ -143,13 +143,13 @@ class GaussMixNLLAdversary(Adversary):
         sigma = self.nll_pars[:, n_components:2*n_components]
         pi = self.nll_pars[:, 2*n_components:]
 
-        pdf = 0
+        likelihood = 0
         for c in range(n_components):
-            pdf += pi[:, c] * ((1. / np.sqrt(2. * np.pi)) / sigma[:, c] *
+            likelihood += pi[:, c] * ((1. / np.sqrt(2. * np.pi)) / sigma[:, c] *
                                tf.math.exp(-(self.sensitive - mu[:, c]) ** 2 / (2. * sigma[:, c] ** 2)))
 
         # make the loss
-        self.nll = - tf.math.log(pdf)
+        self.nll = - tf.math.log(likelihood)
         self.loss = tf.reduce_mean(self.nll)
 
 
