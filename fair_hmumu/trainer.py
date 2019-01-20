@@ -195,6 +195,15 @@ class Trainer:
         clf_score.save(os.path.join(self.score_loc, clf_score.fname))
 
         # plot setup
+        bcm_plot = {'score':self.bcm_score,
+                    'label':self.bcm_conf['type'],
+                    'colour':defs.dark_blue,
+                    'style':'-'}
+        clf_plot = {'score':clf_score,
+                    'label':self.clf.name,
+                    'colour':defs.blue,
+                    'style':'-'}
+
         clf_scores = [self.bcm_score, clf_score]
         labels = [self.bcm_conf['type'], self.clf.name]
         colours = [defs.dark_blue, defs.blue]
@@ -202,22 +211,24 @@ class Trainer:
         kwargs = {'labels':labels, 'colours':colours, 'styles':styles}
         unique_id = 'final' if is_final_step else '{:04d}'.format(istep)
 
+        # determine the location of the plot
+        def loc(name):
+            return self.loc if is_final_step else utils.makedir(os.path.join(self.loc, name))
+
         # loss plot
-        loc = self.loc if is_final_step else utils.makedir(os.path.join(self.loc, 'losses'))
-        plot.losses(self._losses, loc, unique_id, self.trn_conf, self.plt_conf)
+        plot.losses(self._losses, loc('losses'), unique_id, self.trn_conf, self.plt_conf)
 
         # roc plot
-        loc = self.loc if is_final_step else utils.makedir(os.path.join(self.loc, 'roc_curve'))
-        plot.roc_curve(clf_scores, loc, unique_id, **kwargs)
+        #plot.roc_curve(clf_scores, loc('roc_curve'), unique_id, **kwargs)
+        plot.roc_curve([bcm_plot, clf_plot], loc('roc_curve'), unique_id)
 
         # clf output plot
-        loc = self.loc if is_final_step else utils.makedir(os.path.join(self.loc, 'clf_output'))
-        plot.clf_output(clf_scores, loc, unique_id, **kwargs)
+        plot.clf_output(clf_scores, loc('clf_output'), unique_id, **kwargs)
 
         # mass distro plots
         for perc in self.percentiles:
-            loc = self.loc if is_final_step else utils.makedir(os.path.join(self.loc, 'mass_shape_{}p'.format(perc)))
-            plot.mass_shape(clf_scores, perc, loc, unique_id, **kwargs)
+            pname = 'mass_shape_{}p'.format(perc)
+            plot.mass_shape(clf_scores, perc, loc(pname), unique_id, **kwargs)
 
     def assess_clf(self, name, test_pred, ss_pred):
 

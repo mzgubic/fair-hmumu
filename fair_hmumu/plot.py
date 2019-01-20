@@ -58,13 +58,15 @@ def losses(losses, loc, unique_id, trn_conf, plt_conf):
     print(path)
 
 
-def roc_curve(clf_scores, loc, unique_id, **kwargs):
+def roc_curve(plot_setups, loc, unique_id):
 
     # plot
     fig, ax = plt.subplots(figsize=(7, 7))
-    for i, score in enumerate(clf_scores):
-        fprs, tprs = score.roc_curve
-        ax.plot(1-fprs, tprs, color=kwargs['colours'][i], linestyle=kwargs['styles'][i], label=kwargs['labels'][i])
+
+    for i, setup in enumerate(plot_setups):
+        fprs, tprs = setup['score'].roc_curve
+        ax.plot(1-fprs, tprs, color=setup['colour'], linestyle=setup['style'], label=setup['label'])
+
     ax.legend(loc='best', fontsize=10)
     ax.set_xlabel('Background rejection')
     ax.set_ylabel('Signal efficiency')
