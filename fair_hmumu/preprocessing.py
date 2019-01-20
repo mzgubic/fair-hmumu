@@ -1,5 +1,3 @@
-import pickle
-import numpy as np
 from sklearn.decomposition import PCA
 from fair_hmumu.utils import Saveable
 
@@ -8,6 +6,7 @@ class PCAWhiteningPreprocessor(Saveable):
 
     def __init__(self, n_cpts):
 
+        super().__init__('PCA')
         self.pca = PCA(n_cpts, svd_solver='auto', whiten=True)
 
     def fit(self, train_data):
@@ -23,4 +22,4 @@ class PCAWhiteningPreprocessor(Saveable):
     def inverse_transform(self, data):
 
         return self.pca.inverse_transform(data)
-       
+

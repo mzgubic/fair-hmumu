@@ -3,7 +3,8 @@ import itertools
 import numpy as np
 import uproot as ur
 import pandas as pd
-import fair_hmumu.defs as defs
+from fair_hmumu import defs
+
 
 class DatasetHandler:
 
@@ -25,7 +26,7 @@ class DatasetHandler:
         self.entrystop = entrystop
         self.seed = seed
         self.test_frac = test_frac
-        
+
         # set up
         self._load()
         self._split()
@@ -120,7 +121,7 @@ class DatasetHandler:
         all_entries = df.shape[0]
 
         # how many to fetch
-        if nentries == None or nentries < 0:
+        if nentries is None or nentries < 0:
             nentries = all_entries
         else:
             nentries = min(nentries, all_entries)

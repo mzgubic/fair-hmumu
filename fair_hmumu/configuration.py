@@ -2,7 +2,7 @@ import os
 import ast
 import itertools
 import configparser
-import fair_hmumu.utils as utils
+from fair_hmumu import utils
 
 
 class Configuration:
@@ -56,7 +56,7 @@ class Configuration:
             for option in self.config[section]:
 
                 value = self.get(section, option)
-                fixed = not type(value) == list
+                fixed = not isinstance(value, list)
 
                 if which == 'all':
                     d[section][option] = value
@@ -67,7 +67,7 @@ class Configuration:
                 if which == 'sweep' and not fixed:
                     d[section][option] = value
 
-        return d 
+        return d
 
     def get(self, section, option=None):
         """
@@ -75,12 +75,12 @@ class Configuration:
         """
 
         # if only section is provided return a dict
-        if option == None:
+        if option is None:
             d = {}
-            for option in self.config.options(section):
-                d[option] = self.get(section, option)
+            for opt in self.config.options(section):
+                d[opt] = self.get(section, opt)
             return d
-                
+
         # if section and option are provided return the option value
         else:
             try:
@@ -99,7 +99,7 @@ class Configuration:
 
     def read(self):
 
-        self.config.read(self.path)        
+        self.config.read(self.path)
 
     def write(self):
 
@@ -107,10 +107,10 @@ class Configuration:
             self.config.write(f)
 
     def __str__(self):
-        
+
         ret = '\n'
         for section in self.config.sections():
-            
+
             # write a section
             ret += '[{}]\n'.format(section)
             for option in self.config.options(section):
@@ -142,20 +142,20 @@ class Configuration:
             sw_sections = [section for section in sweep if not sweep[section] == {}]
             desc = [(section, option) for section in sw_sections for option in sweep[section]]
             lists = [sweep[section][option] for section in sw_sections for option in sweep[section]]
-    
+
             combinations = list(itertools.product(*lists))
-    
+
             # loop over combinations and make run configs
             for i, comb in enumerate(combinations):
-                
+
                 par_dict = fixed
                 for (section, option), value in zip(desc, comb):
                     par_dict[section][option] = value
-    
+
                 loc = utils.makedir(os.path.join(self.loc, 'points', 'run{}'.format(i)))
                 run_conf = Configuration.from_dict(par_dict, os.path.join(loc, 'run_conf.ini'))
                 run_conf.write()
-    
+
                 yield run_conf
 
 
