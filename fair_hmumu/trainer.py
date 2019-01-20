@@ -38,10 +38,16 @@ class Trainer:
         self._load_data()
 
         # data preprocessing
+        self.bcm = None
+        self.bcm_score = None
+        self.score_loc = utils.makedir(os.path.join(self.loc, 'clf_scores'.format(self.clf.name)))
         self._fit_preprocessing()
 
         # set up TensorFlow environment
         self._setup_environment()
+
+        # prepare losses
+        self._losses = {n:[] for n in ['C', 'A', 'CA']}
 
     def _load_data(self):
 
@@ -88,9 +94,6 @@ class Trainer:
         return batch
 
     def pretrain(self):
-
-        # prepare losses
-        self._losses = {n:[] for n in ['C', 'A', 'CA']}
 
         # benchmark training
         self._train_benchmarks()
@@ -142,7 +145,6 @@ class Trainer:
 
         # and store the score
         self.bcm_score = self.assess_clf(self.bcm_conf['type'], test_pred, ss_pred)
-        self.score_loc = utils.makedir(os.path.join(self.loc, 'clf_scores'.format(self.clf.name)))
         self.bcm_score.save(os.path.join(self.score_loc, self.bcm_score.fname))
 
         # save the loss as well (https://www.tensorflow.org/api_docs/python/tf/nn/sigmoid_cross_entropy_with_logits)
