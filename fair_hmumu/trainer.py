@@ -204,14 +204,8 @@ class Trainer:
                     'colour':defs.blue,
                     'style':'-'}
 
-        clf_scores = [self.bcm_score, clf_score]
-        labels = [self.bcm_conf['type'], self.clf.name]
-        colours = [defs.dark_blue, defs.blue]
-        styles = ['-', '-']
-        kwargs = {'labels':labels, 'colours':colours, 'styles':styles}
+        # determine the unique id and location of the plot
         unique_id = 'final' if is_final_step else '{:04d}'.format(istep)
-
-        # determine the location of the plot
         def loc(name):
             return self.loc if is_final_step else utils.makedir(os.path.join(self.loc, name))
 
@@ -223,12 +217,12 @@ class Trainer:
         plot.roc_curve([bcm_plot, clf_plot], loc('roc_curve'), unique_id)
 
         # clf output plot
-        plot.clf_output(clf_scores, loc('clf_output'), unique_id, **kwargs)
+        plot.clf_output([bcm_plot, clf_plot], loc('clf_output'), unique_id)
 
         # mass distro plots
         for perc in self.percentiles:
             pname = 'mass_shape_{}p'.format(perc)
-            plot.mass_shape(clf_scores, perc, loc(pname), unique_id, **kwargs)
+            plot.mass_shape([bcm_plot, clf_plot], perc, loc(pname), unique_id)
 
     def assess_clf(self, name, test_pred, ss_pred):
 

@@ -63,7 +63,7 @@ def roc_curve(plot_setups, loc, unique_id):
     # plot
     fig, ax = plt.subplots(figsize=(7, 7))
 
-    for i, setup in enumerate(plot_setups):
+    for setup in plot_setups:
         fprs, tprs = setup['score'].roc_curve
         ax.plot(1-fprs, tprs, color=setup['colour'], linestyle=setup['style'], label=setup['label'])
 
@@ -78,7 +78,7 @@ def roc_curve(plot_setups, loc, unique_id):
     print(path)
 
 
-def clf_output(clf_scores, loc, unique_id, **kwargs):
+def clf_output(plot_setups, loc, unique_id):
 
     # compute the centres of the bins
     edges = np.linspace(0, 1, defs.bins+1)
@@ -91,28 +91,28 @@ def clf_output(clf_scores, loc, unique_id, **kwargs):
     fig.suptitle('Background-only MC')
 
     # loop over classifiers
-    for i, score in enumerate(clf_scores):
+    for setup in plot_setups:
 
         # get clf outputs
-        clf_hists = score.clf_hists
+        clf_hists = setup['score'].clf_hists
 
         # common keyword arguments
-        h_kwargs = {'bins':defs.bins, 'color':kwargs['colours'][i], 'histtype':'step', 'range':(0, 1)}
+        kwargs = {'bins':defs.bins, 'color':setup['colour'], 'histtype':'step', 'range':(0, 1)}
 
         # plot all mass ranges
         for mass_range, lstyle in zip(['low', 'medium', 'high'], [':', '-', '--']):
 
             # top panel
             mass_comment = {'low':'< 120 GeV', 'medium':'120 < 130 GeV', 'high':'> 130 GeV'}
-            label = '{} ({})'.format(kwargs['labels'][i], mass_comment[mass_range])
-            ax[0].hist(centres, weights=clf_hists[mass_range], linestyle=lstyle, label=label, **h_kwargs)
+            label = '{} ({})'.format(setup['label'], mass_comment[mass_range])
+            ax[0].hist(centres, weights=clf_hists[mass_range], linestyle=lstyle, label=label, **kwargs)
 
             # bottom panel
             with np.errstate(divide='ignore', invalid='ignore'):
                 ratio = clf_hists[mass_range]/clf_hists['medium']
             ratio[ratio == np.inf] = 0
             ratio = np.nan_to_num(ratio)
-            ax[1].hist(centres, weights=ratio, linestyle=lstyle, **h_kwargs)
+            ax[1].hist(centres, weights=ratio, linestyle=lstyle, **kwargs)
 
     ax[0].legend(loc='best', fontsize=10)
     ax[0].set_xlim(0, 1)
@@ -128,7 +128,7 @@ def clf_output(clf_scores, loc, unique_id, **kwargs):
     print(path)
 
 
-def mass_shape(clf_scores, perc, loc, unique_id, **kwargs):
+def mass_shape(plot_setups, perc, loc, unique_id):
 
     # compute the centres of the bins
     edges = np.linspace(defs.mlow, defs.mhigh, defs.bins+1)
@@ -141,24 +141,24 @@ def mass_shape(clf_scores, perc, loc, unique_id, **kwargs):
     fig.suptitle('Background-only MC')
 
     # loop over classifiers
-    for i, score in enumerate(clf_scores):
+    for setup in plot_setups:
 
         # get clf outputs
-        sel_hist, full_hist = score.mass_hists[perc]
+        sel_hist, full_hist = setup['score'].mass_hists[perc]
 
         # common keyword arguments
-        h_kwargs = {'bins':defs.bins, 'color':kwargs['colours'][i], 'histtype':'step', 'range':(defs.mlow, defs.mhigh)}
+        kwargs = {'bins':defs.bins, 'color':setup['colour'], 'histtype':'step', 'range':(defs.mlow, defs.mhigh)}
 
         # top panel
-        label = '{} (best {}%)'.format(kwargs['labels'][i], perc)
-        ax[0].hist(centres, weights=sel_hist, linestyle=kwargs['styles'][i], label=label, **h_kwargs)
+        label = '{} (best {}%)'.format(setup['label'], perc)
+        ax[0].hist(centres, weights=sel_hist, linestyle=setup['style'], label=label, **kwargs)
 
         # bottom panel
         with np.errstate(divide='ignore', invalid='ignore'):
             ratio = sel_hist/full_hist
         ratio[ratio == np.inf] = 0
         ratio = np.nan_to_num(ratio)
-        ax[1].hist(centres, weights=ratio, linestyle=kwargs['styles'][i], **h_kwargs)
+        ax[1].hist(centres, weights=ratio, linestyle=setup['style'], **kwargs)
 
     ax[1].plot([defs.mlow, defs.mhigh], [perc/100., perc/100.], 'k:')
     ax[0].legend(loc='best', fontsize=10)
