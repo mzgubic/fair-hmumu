@@ -1,5 +1,5 @@
 import tensorflow as tf
-import fair_hmumu.defs as defs
+from fair_hmumu import defs
 from fair_hmumu.utils import Saveable
 
 class TFEnvironment(Saveable):
@@ -67,7 +67,7 @@ class TFEnvironment(Saveable):
         self.sess.run(self.opt_A, feed_dict=feed_dict)
 
     def losses(self, data):
-        
+
         feed_dict = {self._in[xyzw]:data[xyzw] for xyzw in defs.XYZW}
         return self.sess.run([self.clf.loss, self.adv.loss, self.CA_loss], feed_dict=feed_dict)
 
@@ -75,7 +75,7 @@ class TFEnvironment(Saveable):
 
         feed_dict = {self._in[xyzw]:data[xyzw] for xyzw in defs.XYZW}
         return self.sess.run(self.clf.proba, feed_dict=feed_dict)
-        
+
 
 
 

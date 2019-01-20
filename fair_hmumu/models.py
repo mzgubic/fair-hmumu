@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-import tensorflow.contrib.layers as layers
+from tensorflow.contrib import layers
 from fair_hmumu.utils import Saveable
 
 

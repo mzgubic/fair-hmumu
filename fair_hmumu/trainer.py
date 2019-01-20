@@ -1,11 +1,11 @@
 import os
-import sklearn
 import numpy as np
+import sklearn
 from sklearn.ensemble import GradientBoostingClassifier
-import fair_hmumu.defs as defs
-import fair_hmumu.plot as plot
-import fair_hmumu.models as models
-import fair_hmumu.utils as utils
+from fair_hmumu import defs
+from fair_hmumu import plot
+from fair_hmumu import models
+from fair_hmumu import utils
 from fair_hmumu.dataset import DatasetHandler
 from fair_hmumu.preprocessing import PCAWhiteningPreprocessor
 from fair_hmumu.environment import TFEnvironment
@@ -313,7 +313,7 @@ class ClassifierScore(utils.Saveable):
 
     def __init__(self, name, roc, clf_hists, mass_hists):
 
-        self.name = name
+        super().__init__(name)
         self.fname = '{}_score.pkl'.format(self.name)
         self.roc_curve = roc[:2]
         self.roc_auc = roc[2]
