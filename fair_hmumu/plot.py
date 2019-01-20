@@ -1,8 +1,8 @@
 import os
 import numpy as np
-import matplotlib.pyplot as plt
-mpl.use('agg') # order of magnitude faster than tkagg
 import matplotlib as mpl
+mpl.use('agg') # order of magnitude faster than tkagg
+import matplotlib.pyplot as plt
 from fair_hmumu import defs
 
 mpl.rcParams['font.size'] = 15
