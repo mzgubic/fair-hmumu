@@ -8,7 +8,7 @@ class Model(Saveable):
 
     def __init__(self, hps):
 
-        self.name = str(hps['type'])
+        super().__init__(str(hps['type']))
         self.hps = hps
 
     def __str__(self):
@@ -16,7 +16,15 @@ class Model(Saveable):
 
 
 class Classifier(Model):
-    
+
+    def __init__(self, hps):
+
+        super().__init__(hps)
+        self.output = None
+        self.proba = None
+        self.tf_vars = None
+        self.loss = None
+
     def make_forward_pass(self, input_layer):
 
         # build the graph in the scope
@@ -33,7 +41,7 @@ class Classifier(Model):
             self.output = layers.linear(layer, self.hps['n_classes'])
 
             # and an extra layer for getting the predictions directly
-            self.proba = tf.reshape(layers.softmax(self.output)[:,1], shape=(-1,1))
+            self.proba = tf.reshape(layers.softmax(self.output)[:, 1], shape=(-1, 1))
 
         self.tf_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name)
 
@@ -48,6 +56,12 @@ class Classifier(Model):
 
 
 class Adversary(Model):
+
+    def __init__(self, hps):
+
+        super().__init__(hps)
+        self.loss = None
+        self.tf_vars = None
 
     @classmethod
     def create(cls, hps):
@@ -72,6 +86,14 @@ class DummyAdversary(Adversary):
 
 class GaussMixNLLAdversary(Adversary):
 
+    def __init__(self, hps):
+
+        super().__init__(hps)
+        self.proba = None
+        self.sensitive = None
+        self.nll_pars = None
+        self.nll = None
+
     def make_loss(self, proba, sensitive):
 
         # store the input placeholders
@@ -90,7 +112,7 @@ class GaussMixNLLAdversary(Adversary):
         n_components = self.hps['n_components']
 
         with tf.variable_scope(self.name):
-    
+
             # define the input layer
             layer = self.proba
 
@@ -100,15 +122,15 @@ class GaussMixNLLAdversary(Adversary):
 
             # output layer: (mu, sigma, amplitude) for each component
             output = layers.linear(layer, 3*n_components)
-    
-            # make sure sigmas are positive and pis are normalised 
+
+            # make sure sigmas are positive and pis are normalised
             mu = output[:, :n_components]
             sigma = tf.exp(output[:, n_components:2*n_components])
             pi = tf.nn.softmax(output[:, 2*n_components:])
-    
+
             # interpret the output layers as nll parameters
             self.nll_pars = tf.concat([mu, sigma, pi], axis=1)
-    
+
         self.tf_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name)
 
     def _make_loss(self):
@@ -124,7 +146,7 @@ class GaussMixNLLAdversary(Adversary):
         pdf = 0
         for c in range(n_components):
             pdf += pi[:, c] * ((1. / np.sqrt(2. * np.pi)) / sigma[:, c] *
-                    tf.math.exp(-(self.sensitive - mu[:, c]) ** 2 / (2. * sigma[:, c] ** 2)))
+                               tf.math.exp(-(self.sensitive - mu[:, c]) ** 2 / (2. * sigma[:, c] ** 2)))
 
         # make the loss
         self.nll = - tf.math.log(pdf)
