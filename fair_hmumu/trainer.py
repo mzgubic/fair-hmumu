@@ -200,7 +200,7 @@ class Trainer:
         colours = [defs.dark_blue, defs.blue]
         styles = ['-', '-']
         kwargs = {'labels':labels, 'colours':colours, 'styles':styles}
-        unique_id = 'final' if is_final_step else str(istep)
+        unique_id = 'final' if is_final_step else '{:04d}'.format(istep)
 
         # loss plot
         loc = self.loc if is_final_step else utils.makedir(os.path.join(self.loc, 'losses'))
