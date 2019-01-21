@@ -36,7 +36,14 @@ class Trainer:
         print('------------')
 
         # load the data handler and the data
+        self._ds = {}
+        self._tt = ['train', 'test']
+        self._tts = ['train', 'test', 'ss']
         self._load_data()
+
+        # prepare losses
+
+        self._losses = {tt:{n:[] for n in ['C', 'A', 'CA', 'BCM']} for tt in self._tt}
 
         # data preprocessing
         self.bcm = None
@@ -48,8 +55,7 @@ class Trainer:
         # set up TensorFlow environment
         self._setup_environment()
 
-        # prepare losses
-        self._losses = {tt:{n:[] for n in ['C', 'A', 'CA', 'BCM']} for tt in ['train', 'test']}
+
 
     def _load_data(self):
 
@@ -61,7 +67,6 @@ class Trainer:
         self.dh = DatasetHandler(production, features, entrystop=entrystop, test_frac=0.25, seed=42)
 
         # load
-        self._ds = {}
         self._ds['train'] = self.dh.get_train(defs.jet0) # TODO: jet channels
         self._ds['test'] = self.dh.get_test(defs.jet0)
         self._ds['ss'] = self.dh.get_ss(defs.jet0)
@@ -77,9 +82,8 @@ class Trainer:
             self.pre[xz].save(os.path.join(self.loc, 'PCA_{}_{}.pkl'.format(xz, defs.jet0)))
 
             # apply it to the datasets
-            self._ds['train'][xz] = self.pre[xz].transform(self._ds['train'][xz])
-            self._ds['test'][xz] = self.pre[xz].transform(self._ds['test'][xz])
-            self._ds['ss'][xz] = self.pre[xz].transform(self._ds['ss'][xz])
+            for tts in self._tts:
+                self._ds[tts][xz] = self.pre[xz].transform(self._ds[tts][xz])
 
     def _setup_environment(self):
 
@@ -268,15 +272,11 @@ class Trainer:
 
     def _assess_losses(self):
 
-        C, A, CA = self.env.losses(self._ds['test'])
-        self._losses['test']['C'].append(C)
-        self._losses['test']['A'].append(A)
-        self._losses['test']['CA'].append(CA)
-
-        C, A, CA = self.env.losses(self._ds['train'])
-        self._losses['train']['C'].append(C)
-        self._losses['train']['A'].append(A)
-        self._losses['train']['CA'].append(CA)
+        for tt in self._tt:
+            C, A, CA = self.env.losses(self._ds[tt])
+            self._losses[tt]['C'].append(C)
+            self._losses[tt]['A'].append(A)
+            self._losses[tt]['CA'].append(CA)
 
     def _get_roc(self, test_pred, test_label, test_weight):
 
