@@ -32,6 +32,7 @@ class Trainer:
         print(self.opt_conf)
         print(self.trn_conf)
         print(self.bcm_conf)
+        print(self.plt_conf)
         print('------------')
 
         # load the data handler and the data
@@ -48,7 +49,7 @@ class Trainer:
         self._setup_environment()
 
         # prepare losses
-        self._losses = {n:[] for n in ['C', 'A', 'CA']}
+        self._losses = {tt:{n:[] for n in ['C', 'A', 'CA', 'BCM']} for tt in ['train', 'test']}
 
     def _load_data(self):
 
@@ -158,10 +159,11 @@ class Trainer:
         self.bcm_train_score.save(os.path.join(self.score_loc, self.bcm_train_score.fname))
 
         # save the loss as well (https://www.tensorflow.org/api_docs/python/tf/nn/sigmoid_cross_entropy_with_logits)
-        labels = self._test['Y'].ravel()
-        preds = test_pred.ravel()
-        loss = - labels * np.log(preds) - (1-labels) * np.log(1-preds)
-        self._losses['BCM'] = np.mean(loss)
+        def loss(preds, labels):
+            return np.mean(- labels * np.log(preds) - (1-labels) * np.log(1-preds))
+
+        self._losses['test']['BCM'] = loss(test_pred.ravel(), self._test['Y'].ravel())
+        self._losses['train']['BCM'] = loss(train_pred.ravel(), self._train['Y'].ravel())
 
     def train(self):
 
@@ -239,7 +241,6 @@ class Trainer:
         plot.losses(self._losses, loc('losses'), unique_id, self.trn_conf, self.plt_conf)
 
         # roc plot
-        #plot.roc_curve(clf_scores, loc('roc_curve'), unique_id, **kwargs)
         plot.roc_curve([bcm_test_plot, bcm_train_plot, clf_test_plot, clf_train_plot], loc('roc_curve'), unique_id)
 
         # clf output plot
@@ -267,10 +268,14 @@ class Trainer:
     def _assess_losses(self):
 
         C, A, CA = self.env.losses(self._test)
+        self._losses['test']['C'].append(C)
+        self._losses['test']['A'].append(A)
+        self._losses['test']['CA'].append(CA)
 
-        self._losses['C'].append(C)
-        self._losses['A'].append(A)
-        self._losses['CA'].append(CA)
+        C, A, CA = self.env.losses(self._train)
+        self._losses['train']['C'].append(C)
+        self._losses['train']['A'].append(A)
+        self._losses['train']['CA'].append(CA)
 
     def _get_roc(self, test_pred, test_label, test_weight):
 

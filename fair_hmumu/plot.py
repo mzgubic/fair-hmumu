@@ -13,32 +13,39 @@ def losses(losses, loc, unique_id, trn_conf, plt_conf):
     # determine the training steps at which the losses were recorded
     n_pre = trn_conf['n_pre']
     n_epochs = trn_conf['n_epochs']
-    steps_pre = list(range(1, 2*n_pre+1))
-    steps_tr = [1 + 2*n_pre + i for i in range(n_epochs)]
-    steps = steps_pre + steps_tr
+    steps = list(range(1, 1 + 2*n_pre + n_epochs))
 
-    # losses, labels, and colours
-    loss_types = ['C', 'A', 'CA']
-    labels = ['Classifier', 'Adversary', r'Clf. + $ \lambda \times$ Adv.']
-    colours = ['r', 'b', 'g']
+    # setup
+    colours = {'C':'r', 'A':'b', 'CA':'g', 'BCM':'k'}
+    lstyles = {'test':'-', 'train':':'}
+    def get_label(tt, ltype):
+        labels = {'C':'Classifier',
+                  'A':'Adversary',
+                  'CA':r'Clf. + $ \lambda \times$ Adv.',
+                  'BCM':'Benchmark'.format(tt)}
+        return '{} ({})'.format(labels[ltype], tt)
 
     # plot
     fig, ax = plt.subplots(3, 1, figsize=(7, 7), sharex=True)
     fig.suptitle('Losses')
 
-    # plot losses
-    for i, nn in enumerate(loss_types):
+    # plot benchmark separately
+    for tt in losses:
+        xs = [1, len(steps)]
+        ys = [losses[tt]['BCM'], losses[tt]['BCM']]
+        ax[0].plot(xs, ys, color=colours['BCM'], linestyle=lstyles[tt], label=get_label(tt, 'BCM'), alpha=0.5)
 
-        # get the losses and plot them
-        loss = losses[nn]
-        ax[i].plot(steps[:len(loss)], loss, color=colours[i], linestyle='-', label=labels[i])
+    # plot them
+    for i, ltype in enumerate(['C', 'A', 'CA']):
+        for tt in losses:
 
-        # set the appropriate x and y scales, plot the benchmark loss
-        ax[i].set_ylim(ax[i].get_ylim())
+            # plot the loss
+            loss = losses[tt][ltype]
+            ax[i].plot(steps[:len(loss)], loss, color=colours[ltype], linestyle=lstyles[tt], label=get_label(tt, ltype))
+
+        # set the x limits to the full number of steps
+        ax[i].set_ylim(ax[i].get_ylim()) # fix it
         ax[i].set_xlim(np.min(steps), 2*n_pre+n_epochs)
-        if i == 0:
-            ax[i].set_ylim(min(losses['BCM'], ax[i].get_ylim()[0]) - 0.01, ax[i].get_ylim()[1])
-            ax[0].plot([np.min(steps), 2*n_pre+n_epochs], [losses['BCM'], losses['BCM']], 'k--', label='Benchmark')
 
         # plot the vertical lines showing pretraining steps
         ax[i].plot([n_pre, n_pre], list(ax[i].get_ylim()), 'k:')
