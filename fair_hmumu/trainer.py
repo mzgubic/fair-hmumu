@@ -61,9 +61,10 @@ class Trainer:
         self.dh = DatasetHandler(production, features, entrystop=entrystop, test_frac=0.25, seed=42)
 
         # load
-        self._train = self.dh.get_train(defs.jet0) # TODO: jet channels
-        self._test = self.dh.get_test(defs.jet0)
-        self._ss = self.dh.get_ss(defs.jet0)
+        self._ds = {}
+        self._ds['train'] = self.dh.get_train(defs.jet0) # TODO: jet channels
+        self._ds['test'] = self.dh.get_test(defs.jet0)
+        self._ds['ss'] = self.dh.get_ss(defs.jet0)
 
     def _fit_preprocessing(self):
 
@@ -71,14 +72,14 @@ class Trainer:
         for xz in ['X', 'Z']:
 
             # fit the data preprocessing for the features and the mass
-            self.pre[xz] = PCAWhiteningPreprocessor(n_cpts=self._train[xz].shape[1])
-            self.pre[xz].fit(self._train[xz])
+            self.pre[xz] = PCAWhiteningPreprocessor(n_cpts=self._ds['train'][xz].shape[1])
+            self.pre[xz].fit(self._ds['train'][xz])
             self.pre[xz].save(os.path.join(self.loc, 'PCA_{}_{}.pkl'.format(xz, defs.jet0)))
 
             # apply it to the datasets
-            self._train[xz] = self.pre[xz].transform(self._train[xz])
-            self._test[xz] = self.pre[xz].transform(self._test[xz])
-            self._ss[xz] = self.pre[xz].transform(self._ss[xz])
+            self._ds['train'][xz] = self.pre[xz].transform(self._ds['train'][xz])
+            self._ds['test'][xz] = self.pre[xz].transform(self._ds['test'][xz])
+            self._ds['ss'][xz] = self.pre[xz].transform(self._ds['ss'][xz])
 
     def _setup_environment(self):
 
@@ -135,20 +136,20 @@ class Trainer:
             self.bcm = GradientBoostingClassifier(**bcm_hps)
 
         # training set is very unbalanced, fit without the weights
-        self.bcm.fit(self._train['X'], self._train['Y'].ravel())
+        self.bcm.fit(self._ds['train']['X'], self._ds['train']['Y'].ravel())
 
     def _predict_benchmarks(self):
 
         print('--- Making benchmark prediction on the test and ss events')
 
         # predict on the test set
-        test_pred = self.bcm.predict_proba(self._test['X'])[:, 1].reshape(-1, 1)
-        test_label = self._test['Y']
-        test_weight = self._test['W']
-        train_pred = self.bcm.predict_proba(self._train['X'])[:, 1].reshape(-1, 1)
-        train_label = self._train['Y']
-        train_weight = self._train['W']
-        ss_pred = self.bcm.predict_proba(self._ss['X'])[:, 1].reshape(-1, 1)
+        test_pred = self.bcm.predict_proba(self._ds['test']['X'])[:, 1].reshape(-1, 1)
+        test_label = self._ds['test']['Y']
+        test_weight = self._ds['test']['W']
+        train_pred = self.bcm.predict_proba(self._ds['train']['X'])[:, 1].reshape(-1, 1)
+        train_label = self._ds['train']['Y']
+        train_weight = self._ds['train']['W']
+        ss_pred = self.bcm.predict_proba(self._ds['ss']['X'])[:, 1].reshape(-1, 1)
 
         # and store the score
         test_name = '{}_test'.format(self.bcm_conf['type'])
@@ -162,8 +163,8 @@ class Trainer:
         def loss(preds, labels):
             return np.mean(- labels * np.log(preds) - (1-labels) * np.log(1-preds))
 
-        self._losses['test']['BCM'] = loss(test_pred.ravel(), self._test['Y'].ravel())
-        self._losses['train']['BCM'] = loss(train_pred.ravel(), self._train['Y'].ravel())
+        self._losses['test']['BCM'] = loss(test_pred.ravel(), self._ds['test']['Y'].ravel())
+        self._losses['train']['BCM'] = loss(train_pred.ravel(), self._ds['train']['Y'].ravel())
 
     def train(self):
 
@@ -201,17 +202,17 @@ class Trainer:
         is_final_step = (istep == n_epochs-1)
 
         # get classifier predictions on the datasets
-        test_pred = self.env.clf_predict(self._test)
-        train_pred = self.env.clf_predict(self._train)
-        ss_pred = self.env.clf_predict(self._ss)
+        test_pred = self.env.clf_predict(self._ds['test'])
+        train_pred = self.env.clf_predict(self._ds['train'])
+        ss_pred = self.env.clf_predict(self._ds['ss'])
 
         # and construct score objects
         test_name = '{}_test_{}'.format(self.clf.name, istep)
-        clf_test_score = self.assess_clf(test_name, test_pred, self._test['Y'], self._test['W'], ss_pred)
+        clf_test_score = self.assess_clf(test_name, test_pred, self._ds['test']['Y'], self._ds['test']['W'], ss_pred)
         clf_test_score.save(os.path.join(self.score_loc, clf_test_score.fname))
 
         train_name = '{}_train_{}'.format(self.clf.name, istep)
-        clf_train_score = self.assess_clf(train_name, train_pred, self._train['Y'], self._train['W'], ss_pred)
+        clf_train_score = self.assess_clf(train_name, train_pred, self._ds['train']['Y'], self._ds['train']['W'], ss_pred)
         clf_train_score.save(os.path.join(self.score_loc, clf_train_score.fname))
 
         # plot setup
@@ -267,12 +268,12 @@ class Trainer:
 
     def _assess_losses(self):
 
-        C, A, CA = self.env.losses(self._test)
+        C, A, CA = self.env.losses(self._ds['test'])
         self._losses['test']['C'].append(C)
         self._losses['test']['A'].append(A)
         self._losses['test']['CA'].append(CA)
 
-        C, A, CA = self.env.losses(self._train)
+        C, A, CA = self.env.losses(self._ds['train'])
         self._losses['train']['C'].append(C)
         self._losses['train']['A'].append(A)
         self._losses['train']['CA'].append(CA)
@@ -287,7 +288,7 @@ class Trainer:
     def _get_clf_hists(self, ss_pred):
 
         # determine the indices of events in a mass range
-        mass = self.pre['Z'].inverse_transform(self._ss['Z'])
+        mass = self.pre['Z'].inverse_transform(self._ds['ss']['Z'])
         ind = {}
         ind['low'] = mass < 120
         ind['high'] = mass > 130
@@ -297,7 +298,7 @@ class Trainer:
         clf_hists = {}
         for mass_range in ind:
             clf_score = ss_pred[ind[mass_range]]
-            weights = self._ss['W'][ind[mass_range]]
+            weights = self._ds['ss']['W'][ind[mass_range]]
             clf_hists[mass_range], _ = np.histogram(clf_score, weights=weights, bins=defs.bins, range=(0, 1), density=True)
 
         return clf_hists
@@ -305,7 +306,7 @@ class Trainer:
     def _get_mass_hists(self, ss_pred):
 
         # get real mass values
-        mass = self.pre['Z'].inverse_transform(self._ss['Z'])
+        mass = self.pre['Z'].inverse_transform(self._ds['ss']['Z'])
 
         mass_hists = {}
         for perc in self.percentiles:
@@ -313,11 +314,11 @@ class Trainer:
             # determine the mass values in top percentile
             cut = np.percentile(ss_pred, 100-perc)
             sel_mass = mass[ss_pred > cut]
-            sel_weights = self._ss['W'][ss_pred > cut]
+            sel_weights = self._ds['ss']['W'][ss_pred > cut]
 
             # and compute histograms
             sel_hist, _ = np.histogram(sel_mass, weights=sel_weights, bins=defs.bins, range=(defs.mlow, defs.mhigh))
-            full_hist, _ = np.histogram(mass, weights=self._ss['W'], bins=defs.bins, range=(defs.mlow, defs.mhigh))
+            full_hist, _ = np.histogram(mass, weights=self._ds['ss']['W'], bins=defs.bins, range=(defs.mlow, defs.mhigh))
 
             # pack up in dict
             mass_hists[perc] = sel_hist, full_hist
