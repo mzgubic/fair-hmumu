@@ -47,8 +47,7 @@ class Trainer:
 
         # data preprocessing
         self.bcm = None
-        self.bcm_test_score = None
-        self.bcm_train_score = None
+        self.bcm_score = {}
         self.score_loc = utils.makedir(os.path.join(self.loc, 'clf_scores'.format(self.clf.name)))
         self._fit_preprocessing()
 
@@ -147,28 +146,23 @@ class Trainer:
         print('--- Making benchmark prediction on the test and ss events')
 
         # predict on the test set
-        test_pred = self.bcm.predict_proba(self._ds['test']['X'])[:, 1].reshape(-1, 1)
-        test_label = self._ds['test']['Y']
-        test_weight = self._ds['test']['W']
-        train_pred = self.bcm.predict_proba(self._ds['train']['X'])[:, 1].reshape(-1, 1)
-        train_label = self._ds['train']['Y']
-        train_weight = self._ds['train']['W']
-        ss_pred = self.bcm.predict_proba(self._ds['ss']['X'])[:, 1].reshape(-1, 1)
+        pred, label, weight = {}, {}, {}
+        pred['ss'] = self.bcm.predict_proba(self._ds['ss']['X'])[:, 1].reshape(-1, 1)
 
-        # and store the score
-        test_name = '{}_test'.format(self.bcm_conf['type'])
-        self.bcm_test_score = self.assess_clf(test_name, test_pred, test_label, test_weight, ss_pred)
-        self.bcm_test_score.save(os.path.join(self.score_loc, self.bcm_test_score.fname))
-        train_name = '{}_train'.format(self.bcm_conf['type'])
-        self.bcm_train_score = self.assess_clf(train_name, train_pred, train_label, train_weight, ss_pred)
-        self.bcm_train_score.save(os.path.join(self.score_loc, self.bcm_train_score.fname))
+        for tt in self._tt:
 
-        # save the loss as well (https://www.tensorflow.org/api_docs/python/tf/nn/sigmoid_cross_entropy_with_logits)
-        def loss(preds, labels):
-            return np.mean(- labels * np.log(preds) - (1-labels) * np.log(1-preds))
+            pred[tt] = self.bcm.predict_proba(self._ds[tt]['X'])[:, 1].reshape(-1, 1)
+            label[tt] = self._ds[tt]['Y']
+            weight[tt] = self._ds[tt]['W']
 
-        self._losses['test']['BCM'] = loss(test_pred.ravel(), self._ds['test']['Y'].ravel())
-        self._losses['train']['BCM'] = loss(train_pred.ravel(), self._ds['train']['Y'].ravel())
+            # and store the score
+            name = '{}_{}'.format(self.bcm_conf['type'], tt)
+            self.bcm_score[tt] = self.assess_clf(name, pred[tt], label[tt], weight[tt], pred['ss'])
+            self.bcm_score[tt].save(os.path.join(self.score_loc, self.bcm_score[tt].fname))
+
+            # save the loss as well (https://www.tensorflow.org/api_docs/python/tf/nn/sigmoid_cross_entropy_with_logits)
+            loss = np.mean(- label[tt] * np.log(pred[tt]) - (1-label[tt]) * np.log(1-pred[tt]))
+            self._losses[tt]['BCM'] = loss
 
     def train(self):
 
@@ -206,36 +200,30 @@ class Trainer:
         is_final_step = (istep == n_epochs-1)
 
         # get classifier predictions on the datasets
-        test_pred = self.env.clf_predict(self._ds['test'])
-        train_pred = self.env.clf_predict(self._ds['train'])
-        ss_pred = self.env.clf_predict(self._ds['ss'])
+        pred, clf_score = {}, {}
+        bcm_plot, clf_plot = {}, {}
+        pred['ss'] = self.env.clf_predict(self._ds['ss'])
 
-        # and construct score objects
-        test_name = '{}_test_{}'.format(self.clf.name, istep)
-        clf_test_score = self.assess_clf(test_name, test_pred, self._ds['test']['Y'], self._ds['test']['W'], ss_pred)
-        clf_test_score.save(os.path.join(self.score_loc, clf_test_score.fname))
+        for tt in self._tt:
+            pred[tt] = self.env.clf_predict(self._ds[tt])
 
-        train_name = '{}_train_{}'.format(self.clf.name, istep)
-        clf_train_score = self.assess_clf(train_name, train_pred, self._ds['train']['Y'], self._ds['train']['W'], ss_pred)
-        clf_train_score.save(os.path.join(self.score_loc, clf_train_score.fname))
+            # and construct score objects
+            name = '{}_{}_{}'.format(self.clf.name, tt, istep)
+            clf_score[tt] = self.assess_clf(name, pred[tt], self._ds[tt]['Y'], self._ds[tt]['W'], pred['ss'])
+            clf_score[tt].save(os.path.join(self.score_loc, clf_score[tt].fname))
 
-        # plot setup
-        bcm_test_plot = {'score':self.bcm_test_score,
-                         'label':'{} ({})'.format(self.bcm_conf['type'], 'test'),
-                         'colour':defs.dark_blue,
-                         'style':'-'}
-        bcm_train_plot = {'score':self.bcm_train_score,
-                          'label':'{} ({})'.format(self.bcm_conf['type'], 'train'),
-                          'colour':defs.dark_blue,
-                          'style':':'}
-        clf_test_plot = {'score':clf_test_score,
-                         'label':'{} ({})'.format(self.clf.name, 'test'),
-                         'colour':defs.blue,
-                         'style':'-'}
-        clf_train_plot = {'score':clf_train_score,
-                          'label':'{} ({})'.format(self.clf.name, 'train'),
-                          'colour':defs.blue,
-                          'style':':'}
+            # plot setup
+            lstyles = {'test':'-', 'train':':'}
+
+            bcm_plot[tt] = {'score':self.bcm_score[tt],
+                            'label':'{} ({})'.format(self.bcm_conf['type'], tt),
+                            'colour':defs.dark_blue,
+                            'style':lstyles[tt]}
+
+            clf_plot[tt] = {'score':clf_score[tt],
+                            'label':'{} ({})'.format(self.clf.name, tt),
+                            'colour':defs.blue,
+                            'style':lstyles[tt]}
 
         # determine the unique id and location of the plot
         unique_id = 'final' if is_final_step else '{:04d}'.format(istep)
@@ -246,20 +234,20 @@ class Trainer:
         plot.losses(self._losses, loc('losses'), unique_id, self.trn_conf, self.plt_conf)
 
         # roc plot
-        plot.roc_curve([bcm_test_plot, bcm_train_plot, clf_test_plot, clf_train_plot], loc('roc_curve'), unique_id)
+        plot.roc_curve([plot[tt] for plot in [bcm_plot, clf_plot] for tt in self._tt], loc('roc_curve'), unique_id)
 
         # clf output plot
-        plot.clf_output([bcm_test_plot, clf_test_plot], loc('clf_output'), unique_id)
+        plot.clf_output([bcm_plot['test'], clf_plot['test']], loc('clf_output'), unique_id)
 
         # mass distro plots
         for perc in self.percentiles:
             pname = 'mass_shape_{}p'.format(perc)
-            plot.mass_shape([bcm_test_plot, clf_test_plot], perc, loc(pname), unique_id)
+            plot.mass_shape([bcm_plot['test'], clf_plot['test']], perc, loc(pname), unique_id)
 
-    def assess_clf(self, name, test_pred, test_label, test_weight, ss_pred):
+    def assess_clf(self, name, pred, label, weight, ss_pred):
 
         # roc curves
-        roc = self._get_roc(test_pred, test_label, test_weight)
+        roc = self._get_roc(pred, label, weight)
 
         # clf distros for different mass ranges
         clf_hists = self._get_clf_hists(ss_pred)
@@ -278,10 +266,10 @@ class Trainer:
             self._losses[tt]['A'].append(A)
             self._losses[tt]['CA'].append(CA)
 
-    def _get_roc(self, test_pred, test_label, test_weight):
+    def _get_roc(self, pred, label, weight):
 
-        fprs, tprs, _ = sklearn.metrics.roc_curve(test_label, test_pred.ravel(), sample_weight=test_weight)
-        roc_auc = sklearn.metrics.roc_auc_score(test_label, test_pred.ravel(), sample_weight=test_weight)
+        fprs, tprs, _ = sklearn.metrics.roc_curve(label, pred.ravel(), sample_weight=weight)
+        roc_auc = sklearn.metrics.roc_auc_score(label, pred.ravel(), sample_weight=weight)
 
         return fprs, tprs, roc_auc
 
