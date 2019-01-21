@@ -141,10 +141,12 @@ class Trainer:
 
         # predict on the test set
         test_pred = self.bcm.predict_proba(self._test['X'])[:, 1].reshape(-1, 1)
+        test_label = self._test['Y']
+        test_weight = self._test['W']
         ss_pred = self.bcm.predict_proba(self._ss['X'])[:, 1].reshape(-1, 1)
 
         # and store the score
-        self.bcm_score = self.assess_clf(self.bcm_conf['type'], test_pred, ss_pred)
+        self.bcm_score = self.assess_clf(self.bcm_conf['type'], test_pred, test_label, test_weight, ss_pred)
         self.bcm_score.save(os.path.join(self.score_loc, self.bcm_score.fname))
 
         # save the loss as well (https://www.tensorflow.org/api_docs/python/tf/nn/sigmoid_cross_entropy_with_logits)
@@ -188,21 +190,33 @@ class Trainer:
         n_epochs = self.trn_conf['n_epochs']
         is_final_step = (istep == n_epochs-1)
 
-        # assess classifier performance
+        # get classifier predictions on the datasets
         test_pred = self.env.clf_predict(self._test)
+        train_pred = self.env.clf_predict(self._train)
         ss_pred = self.env.clf_predict(self._ss)
-        clf_score = self.assess_clf('{}_{}'.format(self.clf.name, istep), test_pred, ss_pred)
-        clf_score.save(os.path.join(self.score_loc, clf_score.fname))
+
+        # and construct score objects
+        test_name = '{}_test_{}'.format(self.clf.name, istep)
+        clf_test_score = self.assess_clf(test_name, test_pred, self._test['Y'], self._test['W'], ss_pred)
+        clf_test_score.save(os.path.join(self.score_loc, clf_test_score.fname))
+
+        train_name = '{}_train_{}'.format(self.clf.name, istep)
+        clf_train_score = self.assess_clf(train_name, train_pred, self._train['Y'], self._train['W'], ss_pred)
+        clf_train_score.save(os.path.join(self.score_loc, clf_train_score.fname))
 
         # plot setup
         bcm_plot = {'score':self.bcm_score,
                     'label':self.bcm_conf['type'],
                     'colour':defs.dark_blue,
                     'style':'-'}
-        clf_plot = {'score':clf_score,
-                    'label':self.clf.name,
-                    'colour':defs.blue,
-                    'style':'-'}
+        clf_test_plot = {'score':clf_test_score,
+                         'label':'{} ({})'.format(self.clf.name, 'test'),
+                         'colour':defs.blue,
+                         'style':'-'}
+        clf_train_plot = {'score':clf_train_score,
+                          'label':'{} ({})'.format(self.clf.name, 'train'),
+                          'colour':defs.blue,
+                          'style':':'}
 
         # determine the unique id and location of the plot
         unique_id = 'final' if is_final_step else '{:04d}'.format(istep)
@@ -214,20 +228,20 @@ class Trainer:
 
         # roc plot
         #plot.roc_curve(clf_scores, loc('roc_curve'), unique_id, **kwargs)
-        plot.roc_curve([bcm_plot, clf_plot], loc('roc_curve'), unique_id)
+        plot.roc_curve([bcm_plot, clf_test_plot, clf_train_plot], loc('roc_curve'), unique_id)
 
         # clf output plot
-        plot.clf_output([bcm_plot, clf_plot], loc('clf_output'), unique_id)
+        plot.clf_output([bcm_plot, clf_test_plot], loc('clf_output'), unique_id)
 
         # mass distro plots
         for perc in self.percentiles:
             pname = 'mass_shape_{}p'.format(perc)
-            plot.mass_shape([bcm_plot, clf_plot], perc, loc(pname), unique_id)
+            plot.mass_shape([bcm_plot, clf_test_plot], perc, loc(pname), unique_id)
 
-    def assess_clf(self, name, test_pred, ss_pred):
+    def assess_clf(self, name, test_pred, test_label, test_weight, ss_pred):
 
         # roc curves
-        roc = self._get_roc(test_pred)
+        roc = self._get_roc(test_pred, test_label, test_weight)
 
         # clf distros for different mass ranges
         clf_hists = self._get_clf_hists(ss_pred)
@@ -246,10 +260,10 @@ class Trainer:
         self._losses['A'].append(A)
         self._losses['CA'].append(CA)
 
-    def _get_roc(self, test_pred):
+    def _get_roc(self, test_pred, test_label, test_weight):
 
-        fprs, tprs, _ = sklearn.metrics.roc_curve(self._test['Y'], test_pred.ravel(), sample_weight=self._test['W'])
-        roc_auc = sklearn.metrics.roc_auc_score(self._test['Y'], test_pred.ravel(), sample_weight=self._test['W'])
+        fprs, tprs, _ = sklearn.metrics.roc_curve(test_label, test_pred.ravel(), sample_weight=test_weight)
+        roc_auc = sklearn.metrics.roc_auc_score(test_label, test_pred.ravel(), sample_weight=test_weight)
 
         return fprs, tprs, roc_auc
 
