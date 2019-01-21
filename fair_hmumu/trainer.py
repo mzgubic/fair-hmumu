@@ -194,6 +194,7 @@ class Trainer:
             is_final_step = (istep == n_epochs-1)
             if is_final_step or istep%self.plt_conf['n_skip'] == 0:
                 self._assess_scores(istep)
+                self._record_summary()
                 self._make_plots(istep, is_final_step)
 
         # write a bash script that can be run to make gifs
@@ -327,7 +328,10 @@ class Trainer:
 
     def _record_summary(self):
 
-        pass
+        # roc auc
+        roc_auc = self.clf_score['test'].roc_auc
+        with open(os.path.join(self.loc, 'roc_auc.txt'), 'w') as f:
+            f.write('{:2.4f}\n'.format(roc_auc))
 
     def _gif(self):
 
