@@ -234,15 +234,17 @@ class Trainer:
         plot.losses(self._losses, loc('losses'), unique_id, self.trn_conf, self.plt_conf)
 
         # roc plot
-        plot.roc_curve([plot[tt] for plot in [bcm_plot, clf_plot] for tt in self._tt], loc('roc_curve'), unique_id)
+        all_scores = [plot[tt] for plot in [bcm_plot, clf_plot] for tt in self._tt]
+        plot.roc_curve(all_scores, loc('roc_curve'), unique_id)
 
         # clf output plot
-        plot.clf_output([bcm_plot['test'], clf_plot['test']], loc('clf_output'), unique_id)
+        test_scores = [plot['test'] for plot in [bcm_plot, clf_plot]]
+        plot.clf_output(test_scores, loc('clf_output'), unique_id)
 
         # mass distro plots
         for perc in self.percentiles:
             pname = 'mass_shape_{}p'.format(perc)
-            plot.mass_shape([bcm_plot['test'], clf_plot['test']], perc, loc(pname), unique_id)
+            plot.mass_shape(test_scores, perc, loc(pname), unique_id)
 
     def assess_clf(self, name, pred, label, weight, ss_pred):
 
