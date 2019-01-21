@@ -8,11 +8,12 @@ from fair_hmumu import defs
 mpl.rcParams['font.size'] = 15
 
 
-def losses(losses, loc, unique_id, trn_conf, plt_conf):
+def losses(losses, run_conf, loc, unique_id):
 
     # determine the training steps at which the losses were recorded
-    n_pre = trn_conf['n_pre']
-    n_epochs = trn_conf['n_epochs']
+    run_conf = run_conf.as_dict()
+    n_pre = run_conf['Training']['n_pre']
+    n_epochs = run_conf['Training']['n_epochs']
     steps = list(range(1, 1 + 2*n_pre + n_epochs))
 
     # setup
@@ -56,6 +57,9 @@ def losses(losses, loc, unique_id, trn_conf, plt_conf):
         ax[i].legend(loc='best', fontsize=10)
 
     # styling
+    write_conf_info(ax[0], {s:run_conf[s] for s in run_conf if s in ['Classifier', 'Benchmark']}, isloss=True)
+    write_conf_info(ax[1], {s:run_conf[s] for s in run_conf if s in ['Adversary', 'Optimiser']}, isloss=True)
+    write_conf_info(ax[2], {s:run_conf[s] for s in run_conf if s in ['Training']}, isloss=True)
     ax[-1].set_xlabel('Training step')
 
     # save
@@ -65,7 +69,44 @@ def losses(losses, loc, unique_id, trn_conf, plt_conf):
     print(path)
 
 
-def roc_curve(plot_setups, loc, unique_id):
+def write_conf_info(ax, run_conf, isloss=False):
+
+    # params
+    fontsize = 10
+
+    # get data
+    if not isinstance(run_conf, dict):
+        run_conf = run_conf.as_dict()
+    x0, x1 = ax.get_xlim()
+    y0, y1 = ax.get_ylim()
+
+    # three equal panels in loss, no space in one
+    dy = (y1-y0)/30
+    dx = 0.05*(x1-x0)
+    if isloss:
+        dy = 3*dy
+        dx = np.log(dx)
+
+    def gy():
+        for i in range(1000):
+            yield y1 - i*dy
+    y = gy()
+    next(y) # skip one
+
+    # loop over sections
+    for section in run_conf:
+
+        if section == 'Plotting':
+            continue
+
+        # loop over options
+        ax.text(x0, next(y), section, fontsize=fontsize)
+        for option in run_conf[section]:
+            value = run_conf[section][option]
+            ax.text(x0+dx, next(y), '{}: {}'.format(option, value), fontsize=fontsize)
+
+
+def roc_curve(plot_setups, run_conf, loc, unique_id):
 
     # plot
     fig, ax = plt.subplots(figsize=(7, 7))
@@ -74,6 +115,8 @@ def roc_curve(plot_setups, loc, unique_id):
         fprs, tprs = setup['score'].roc_curve
         ax.plot(1-fprs, tprs, color=setup['colour'], linestyle=setup['style'], label=setup['label'])
 
+    # add run conf text
+    write_conf_info(ax, run_conf)
     ax.legend(loc='best', fontsize=10)
     ax.set_xlabel('Background rejection')
     ax.set_ylabel('Signal efficiency')
@@ -85,7 +128,7 @@ def roc_curve(plot_setups, loc, unique_id):
     print(path)
 
 
-def clf_output(plot_setups, loc, unique_id):
+def clf_output(plot_setups, run_conf, loc, unique_id):
 
     # compute the centres of the bins
     edges = np.linspace(0, 1, defs.bins+1)
@@ -121,8 +164,9 @@ def clf_output(plot_setups, loc, unique_id):
             ratio = np.nan_to_num(ratio)
             ax[1].hist(centres, weights=ratio, linestyle=lstyle, **kwargs)
 
-    ax[0].legend(loc='best', fontsize=10)
     ax[0].set_xlim(0, 1)
+    write_conf_info(ax[0], run_conf)
+    ax[0].legend(loc='best', fontsize=10)
     ax[0].set_ylabel('Normalised events')
     ax[1].set_xlim(0, 1)
     ax[1].set_ylim(0, 2)
@@ -135,7 +179,7 @@ def clf_output(plot_setups, loc, unique_id):
     print(path)
 
 
-def mass_shape(plot_setups, perc, loc, unique_id):
+def mass_shape(plot_setups, perc, run_conf, loc, unique_id):
 
     # compute the centres of the bins
     edges = np.linspace(defs.mlow, defs.mhigh, defs.bins+1)
@@ -167,9 +211,12 @@ def mass_shape(plot_setups, perc, loc, unique_id):
         ratio = np.nan_to_num(ratio)
         ax[1].hist(centres, weights=ratio, linestyle=setup['style'], **kwargs)
 
+    # line
     ax[1].plot([defs.mlow, defs.mhigh], [perc/100., perc/100.], 'k:')
-    ax[0].legend(loc='best', fontsize=10)
+    # settings
     ax[0].set_xlim(defs.mlow, defs.mhigh)
+    write_conf_info(ax[0], run_conf)
+    ax[0].legend(loc='best', fontsize=10)
     ax[0].set_ylabel('Events')
     ax[1].set_xlim(defs.mlow, defs.mhigh)
     ax[1].set_xlabel('Invariant mass [GeV]')

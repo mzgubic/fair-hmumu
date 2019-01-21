@@ -231,20 +231,20 @@ class Trainer:
             return self.loc if is_final_step else utils.makedir(os.path.join(self.loc, name))
 
         # loss plot
-        plot.losses(self._losses, loc('losses'), unique_id, self.trn_conf, self.plt_conf)
+        plot.losses(self._losses, self.run_conf, loc('losses'), unique_id)
 
         # roc plot
         all_scores = [plot[tt] for plot in [bcm_plot, clf_plot] for tt in self._tt]
-        plot.roc_curve(all_scores, loc('roc_curve'), unique_id)
+        plot.roc_curve(all_scores, self.run_conf, loc('roc_curve'), unique_id)
 
         # clf output plot
         test_scores = [plot['test'] for plot in [bcm_plot, clf_plot]]
-        plot.clf_output(test_scores, loc('clf_output'), unique_id)
+        plot.clf_output(test_scores, self.run_conf, loc('clf_output'), unique_id)
 
         # mass distro plots
         for perc in self.plt_conf['percentiles']:
             pname = 'mass_shape_{}p'.format(perc)
-            plot.mass_shape(test_scores, perc, loc(pname), unique_id)
+            plot.mass_shape(test_scores, perc, self.run_conf, loc(pname), unique_id)
 
     def assess_clf(self, name, pred, label, weight, ss_pred):
 
