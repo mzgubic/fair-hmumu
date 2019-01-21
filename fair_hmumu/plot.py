@@ -111,12 +111,23 @@ def roc_curve(plot_setups, run_conf, loc, unique_id):
     # plot
     fig, ax = plt.subplots(figsize=(7, 7))
 
-    for setup in plot_setups:
+    y0 = 0.5
+    dy = 0.05
+    ax.text(0.5, y0, 'ROC AUC:')
+    for i, setup in enumerate(plot_setups):
+
+        # add roc curve
         fprs, tprs = setup['score'].roc_curve
         ax.plot(1-fprs, tprs, color=setup['colour'], linestyle=setup['style'], label=setup['label'])
 
+        # add ROC AUC score
+        ax.text(0.5, y0-dy*(i+1), '{}: {:2.2f}'.format(setup['label'], setup['score'].roc_auc))
+
     # add run conf text
     write_conf_info(ax, run_conf)
+
+
+    # settings
     ax.legend(loc='best', fontsize=10)
     ax.set_xlabel('Background rejection')
     ax.set_ylabel('Signal efficiency')

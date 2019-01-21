@@ -45,10 +45,13 @@ class Trainer:
 
         self._losses = {tt:{n:[] for n in ['C', 'A', 'CA', 'BCM']} for tt in self._tt}
 
-        # data preprocessing
+        # prepare classifier scores
         self.bcm = None
         self.bcm_score = {}
+        self.clf_score = {}
         self.score_loc = utils.makedir(os.path.join(self.loc, 'clf_scores'.format(self.clf.name)))
+
+        # data preprocessing
         self._fit_preprocessing()
 
         # set up TensorFlow environment
@@ -157,7 +160,7 @@ class Trainer:
 
             # and store the score
             name = '{}_{}'.format(self.bcm_conf['type'], tt)
-            self.bcm_score[tt] = self.assess_clf(name, pred[tt], label[tt], weight[tt], pred['ss'])
+            self.bcm_score[tt] = self._get_clf_score(name, pred[tt], label[tt], weight[tt], pred['ss'])
             self.bcm_score[tt].save(os.path.join(self.score_loc, self.bcm_score[tt].fname))
 
             # save the loss as well (https://www.tensorflow.org/api_docs/python/tf/nn/sigmoid_cross_entropy_with_logits)
@@ -184,33 +187,109 @@ class Trainer:
                 batch = self.transform(batch)
                 self.env.train_step_adv(batch)
 
-            # plot progress
+            # track losses (cheap)
             self._assess_losses()
+
+            # make plots
             is_final_step = (istep == n_epochs-1)
             if is_final_step or istep%self.plt_conf['n_skip'] == 0:
-                self.make_plots(istep)
+                self._assess_scores(istep)
+                self._make_plots(istep, is_final_step)
 
         # write a bash script that can be run to make gifs
         self._gif()
+        self._record_summary()
 
-    def make_plots(self, istep):
+    def _assess_losses(self):
 
-        # prepare
-        n_epochs = self.trn_conf['n_epochs']
-        is_final_step = (istep == n_epochs-1)
+        for tt in self._tt:
+            C, A, CA = self.env.losses(self._ds[tt])
+            self._losses[tt]['C'].append(C)
+            self._losses[tt]['A'].append(A)
+            self._losses[tt]['CA'].append(CA)
 
-        # get classifier predictions on the datasets
-        pred, clf_score = {}, {}
-        bcm_plot, clf_plot = {}, {}
+    def _assess_scores(self, istep):
+
+        # predict on ss ds
+        pred = {}
         pred['ss'] = self.env.clf_predict(self._ds['ss'])
 
+        # assess scores
         for tt in self._tt:
             pred[tt] = self.env.clf_predict(self._ds[tt])
 
             # and construct score objects
             name = '{}_{}_{}'.format(self.clf.name, tt, istep)
-            clf_score[tt] = self.assess_clf(name, pred[tt], self._ds[tt]['Y'], self._ds[tt]['W'], pred['ss'])
-            clf_score[tt].save(os.path.join(self.score_loc, clf_score[tt].fname))
+            self.clf_score[tt] = self._get_clf_score(name, pred[tt], self._ds[tt]['Y'], self._ds[tt]['W'], pred['ss'])
+            self.clf_score[tt].save(os.path.join(self.score_loc, self.clf_score[tt].fname))
+
+    def _get_clf_score(self, name, pred, label, weight, ss_pred):
+
+        # roc curves
+        roc = self._get_roc(pred, label, weight)
+
+        # clf distros for different mass ranges
+        clf_hists = self._get_clf_hists(ss_pred)
+
+        # mass distros for different clf percentiles
+        mass_hists = self._get_mass_hists(ss_pred)
+
+        # return the score object
+        return ClassifierScore(name, roc, clf_hists, mass_hists)
+
+    def _get_roc(self, pred, label, weight):
+
+        fprs, tprs, _ = sklearn.metrics.roc_curve(label, pred.ravel(), sample_weight=weight)
+        roc_auc = sklearn.metrics.roc_auc_score(label, pred.ravel(), sample_weight=weight)
+
+        return fprs, tprs, roc_auc
+
+    def _get_clf_hists(self, ss_pred):
+
+        # determine the indices of events in a mass range
+        mass = self.pre['Z'].inverse_transform(self._ds['ss']['Z'])
+        ind = {}
+        ind['low'] = mass < 120
+        ind['high'] = mass > 130
+        ind['medium'] = np.logical_and(np.logical_not(ind['low']), np.logical_not(ind['high']))
+
+        # now compute the classifier distribution
+        clf_hists = {}
+        for mass_range in ind:
+            clf_outputs = ss_pred[ind[mass_range]]
+            weights = self._ds['ss']['W'][ind[mass_range]]
+            clf_hists[mass_range], _ = np.histogram(clf_outputs, weights=weights, bins=defs.bins, range=(0, 1), density=True)
+
+        return clf_hists
+
+    def _get_mass_hists(self, ss_pred):
+
+        # get real mass values
+        mass = self.pre['Z'].inverse_transform(self._ds['ss']['Z'])
+
+        mass_hists = {}
+        for perc in self.plt_conf['percentiles']:
+
+            # determine the mass values in top percentile
+            cut = np.percentile(ss_pred, 100-perc)
+            sel_mass = mass[ss_pred > cut]
+            sel_weights = self._ds['ss']['W'][ss_pred > cut]
+
+            # and compute histograms
+            sel_hist, _ = np.histogram(sel_mass, weights=sel_weights, bins=defs.bins, range=(defs.mlow, defs.mhigh))
+            full_hist, _ = np.histogram(mass, weights=self._ds['ss']['W'], bins=defs.bins, range=(defs.mlow, defs.mhigh))
+
+            # pack up in dict
+            mass_hists[perc] = sel_hist, full_hist
+
+        return mass_hists
+
+    def _make_plots(self, istep, is_final_step):
+
+        # get the plotting summary
+        bcm_plot, clf_plot = {}, {}
+
+        for tt in self._tt:
 
             # plot setup
             lstyles = {'test':'-', 'train':':'}
@@ -220,7 +299,7 @@ class Trainer:
                             'colour':defs.dark_blue,
                             'style':lstyles[tt]}
 
-            clf_plot[tt] = {'score':clf_score[tt],
+            clf_plot[tt] = {'score':self.clf_score[tt],
                             'label':'{} ({})'.format(self.clf.name, tt),
                             'colour':defs.blue,
                             'style':lstyles[tt]}
@@ -246,74 +325,9 @@ class Trainer:
             pname = 'mass_shape_{}p'.format(perc)
             plot.mass_shape(test_scores, perc, self.run_conf, loc(pname), unique_id)
 
-    def assess_clf(self, name, pred, label, weight, ss_pred):
+    def _record_summary(self):
 
-        # roc curves
-        roc = self._get_roc(pred, label, weight)
-
-        # clf distros for different mass ranges
-        clf_hists = self._get_clf_hists(ss_pred)
-
-        # mass distros for different clf percentiles
-        mass_hists = self._get_mass_hists(ss_pred)
-
-        # return the score object
-        return ClassifierScore(name, roc, clf_hists, mass_hists)
-
-    def _assess_losses(self):
-
-        for tt in self._tt:
-            C, A, CA = self.env.losses(self._ds[tt])
-            self._losses[tt]['C'].append(C)
-            self._losses[tt]['A'].append(A)
-            self._losses[tt]['CA'].append(CA)
-
-    def _get_roc(self, pred, label, weight):
-
-        fprs, tprs, _ = sklearn.metrics.roc_curve(label, pred.ravel(), sample_weight=weight)
-        roc_auc = sklearn.metrics.roc_auc_score(label, pred.ravel(), sample_weight=weight)
-
-        return fprs, tprs, roc_auc
-
-    def _get_clf_hists(self, ss_pred):
-
-        # determine the indices of events in a mass range
-        mass = self.pre['Z'].inverse_transform(self._ds['ss']['Z'])
-        ind = {}
-        ind['low'] = mass < 120
-        ind['high'] = mass > 130
-        ind['medium'] = np.logical_and(np.logical_not(ind['low']), np.logical_not(ind['high']))
-
-        # now compute the classifier distribution
-        clf_hists = {}
-        for mass_range in ind:
-            clf_score = ss_pred[ind[mass_range]]
-            weights = self._ds['ss']['W'][ind[mass_range]]
-            clf_hists[mass_range], _ = np.histogram(clf_score, weights=weights, bins=defs.bins, range=(0, 1), density=True)
-
-        return clf_hists
-
-    def _get_mass_hists(self, ss_pred):
-
-        # get real mass values
-        mass = self.pre['Z'].inverse_transform(self._ds['ss']['Z'])
-
-        mass_hists = {}
-        for perc in self.plt_conf['percentiles']:
-
-            # determine the mass values in top percentile
-            cut = np.percentile(ss_pred, 100-perc)
-            sel_mass = mass[ss_pred > cut]
-            sel_weights = self._ds['ss']['W'][ss_pred > cut]
-
-            # and compute histograms
-            sel_hist, _ = np.histogram(sel_mass, weights=sel_weights, bins=defs.bins, range=(defs.mlow, defs.mhigh))
-            full_hist, _ = np.histogram(mass, weights=self._ds['ss']['W'], bins=defs.bins, range=(defs.mlow, defs.mhigh))
-
-            # pack up in dict
-            mass_hists[perc] = sel_hist, full_hist
-
-        return mass_hists
+        pass
 
     def _gif(self):
 
