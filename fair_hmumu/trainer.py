@@ -39,7 +39,8 @@ class Trainer:
 
         # data preprocessing
         self.bcm = None
-        self.bcm_score = None
+        self.bcm_test_score = None
+        self.bcm_train_score = None
         self.score_loc = utils.makedir(os.path.join(self.loc, 'clf_scores'.format(self.clf.name)))
         self._fit_preprocessing()
 
@@ -143,11 +144,18 @@ class Trainer:
         test_pred = self.bcm.predict_proba(self._test['X'])[:, 1].reshape(-1, 1)
         test_label = self._test['Y']
         test_weight = self._test['W']
+        train_pred = self.bcm.predict_proba(self._train['X'])[:, 1].reshape(-1, 1)
+        train_label = self._train['Y']
+        train_weight = self._train['W']
         ss_pred = self.bcm.predict_proba(self._ss['X'])[:, 1].reshape(-1, 1)
 
         # and store the score
-        self.bcm_score = self.assess_clf(self.bcm_conf['type'], test_pred, test_label, test_weight, ss_pred)
-        self.bcm_score.save(os.path.join(self.score_loc, self.bcm_score.fname))
+        test_name = '{}_test'.format(self.bcm_conf['type'])
+        self.bcm_test_score = self.assess_clf(test_name, test_pred, test_label, test_weight, ss_pred)
+        self.bcm_test_score.save(os.path.join(self.score_loc, self.bcm_test_score.fname))
+        train_name = '{}_train'.format(self.bcm_conf['type'])
+        self.bcm_train_score = self.assess_clf(train_name, train_pred, train_label, train_weight, ss_pred)
+        self.bcm_train_score.save(os.path.join(self.score_loc, self.bcm_train_score.fname))
 
         # save the loss as well (https://www.tensorflow.org/api_docs/python/tf/nn/sigmoid_cross_entropy_with_logits)
         labels = self._test['Y'].ravel()
@@ -205,10 +213,14 @@ class Trainer:
         clf_train_score.save(os.path.join(self.score_loc, clf_train_score.fname))
 
         # plot setup
-        bcm_plot = {'score':self.bcm_score,
-                    'label':self.bcm_conf['type'],
-                    'colour':defs.dark_blue,
-                    'style':'-'}
+        bcm_test_plot = {'score':self.bcm_test_score,
+                         'label':'{} ({})'.format(self.bcm_conf['type'], 'test'),
+                         'colour':defs.dark_blue,
+                         'style':'-'}
+        bcm_train_plot = {'score':self.bcm_train_score,
+                          'label':'{} ({})'.format(self.bcm_conf['type'], 'train'),
+                          'colour':defs.dark_blue,
+                          'style':':'}
         clf_test_plot = {'score':clf_test_score,
                          'label':'{} ({})'.format(self.clf.name, 'test'),
                          'colour':defs.blue,
@@ -228,15 +240,15 @@ class Trainer:
 
         # roc plot
         #plot.roc_curve(clf_scores, loc('roc_curve'), unique_id, **kwargs)
-        plot.roc_curve([bcm_plot, clf_test_plot, clf_train_plot], loc('roc_curve'), unique_id)
+        plot.roc_curve([bcm_test_plot, bcm_train_plot, clf_test_plot, clf_train_plot], loc('roc_curve'), unique_id)
 
         # clf output plot
-        plot.clf_output([bcm_plot, clf_test_plot], loc('clf_output'), unique_id)
+        plot.clf_output([bcm_test_plot, clf_test_plot], loc('clf_output'), unique_id)
 
         # mass distro plots
         for perc in self.percentiles:
             pname = 'mass_shape_{}p'.format(perc)
-            plot.mass_shape([bcm_plot, clf_test_plot], perc, loc(pname), unique_id)
+            plot.mass_shape([bcm_test_plot, clf_test_plot], perc, loc(pname), unique_id)
 
     def assess_clf(self, name, test_pred, test_label, test_weight, ss_pred):
 
