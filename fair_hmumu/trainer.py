@@ -19,11 +19,11 @@ class Trainer:
         self.loc = run_conf.loc
         self.clf = models.Classifier(run_conf.get('Classifier'))
         self.adv = models.Adversary.create(run_conf.get('Adversary'))
+        self.run_conf = run_conf
         self.opt_conf = run_conf.get('Optimiser')
         self.trn_conf = run_conf.get('Training')
         self.bcm_conf = run_conf.get('Benchmark')
         self.plt_conf = run_conf.get('Plotting')
-        self.percentiles = [50, 10]
 
         print('------------')
         print('--- Settings:')
@@ -242,7 +242,7 @@ class Trainer:
         plot.clf_output(test_scores, loc('clf_output'), unique_id)
 
         # mass distro plots
-        for perc in self.percentiles:
+        for perc in self.plt_conf['percentiles']:
             pname = 'mass_shape_{}p'.format(perc)
             plot.mass_shape(test_scores, perc, loc(pname), unique_id)
 
@@ -299,7 +299,7 @@ class Trainer:
         mass = self.pre['Z'].inverse_transform(self._ds['ss']['Z'])
 
         mass_hists = {}
-        for perc in self.percentiles:
+        for perc in self.plt_conf['percentiles']:
 
             # determine the mass values in top percentile
             cut = np.percentile(ss_pred, 100-perc)
@@ -318,7 +318,7 @@ class Trainer:
     def _gif(self):
 
         gifs = ['roc_curve', 'clf_output', 'losses']
-        gifs += ['mass_shape_{}p'.format(p) for p in self.percentiles]
+        gifs += ['mass_shape_{}p'.format(p) for p in self.plt_conf['percentiles']]
 
         script = os.path.join(self.loc, 'make_gifs.sh')
 
