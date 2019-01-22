@@ -338,12 +338,12 @@ class Trainer:
                 f.write('{:2.4f}\n'.format(number))
 
         # roc auc
-        roc_auc = self.clf_score['test'].roc_auc
-        write_number(roc_auc, 'roc_auc.txt')
+        write_number(self.clf_score['test'].roc_auc, 'roc_auc_clf.txt')
+        write_number(self.bcm_score['test'].roc_auc, 'roc_auc_bcm.txt')
 
         # ks test
-        ks_metric = self.clf_score['test'].ks_metric
-        write_number(ks_metric, 'ks_metric.txt')
+        write_number(self.clf_score['test'].ks_metric, 'ks_metric_clf.txt')
+        write_number(self.bcm_score['test'].ks_metric, 'ks_metric_bcm.txt')
 
     def _gif(self):
 
