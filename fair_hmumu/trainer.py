@@ -59,13 +59,17 @@ class Trainer:
         self._setup_environment()
 
 
-
     def _load_data(self):
+
+        # features preparation
+        muon_vectors_pt = ['Muons_Eta_Lead', 'Muons_Eta_Sub', 'Muons_Phi_Lead', 'Muons_Phi_Sub', 'Muons_PT_Lead', 'Muons_PT_Sub']
+        muon_vectors_ptm = ['Muons_Eta_Lead', 'Muons_Eta_Sub', 'Muons_Phi_Lead', 'Muons_Phi_Sub', 'Muons_PTM_Lead', 'Muons_PTM_Sub']
+        dimuon_vector_ptm = ['Z_Eta', 'Z_Phi', 'Z_PTM']
+        wisconsin = muon_vectors_ptm + dimuon_vector_ptm
 
         # data handling
         production = self.trn_conf['production']
-        features = ['Z_PT', 'Muons_CosThetaStar']
-        features = ['Muons_Eta_Lead', 'Muons_Eta_Sub', 'Muons_Phi_Lead', 'Muons_Phi_Sub', 'Muons_PT_Lead', 'Muons_PT_Sub']
+        features = wisconsin
         entrystop = self.trn_conf['entrystop']
         self.dh = DatasetHandler(production, features, entrystop=entrystop, test_frac=0.25, seed=42)
 
