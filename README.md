@@ -17,6 +17,5 @@ pip install root_pandas
 
 ### set up every time you log in (CentOS machine)
 ```
-source bin/activate
 source setup_env.sh
 ```
