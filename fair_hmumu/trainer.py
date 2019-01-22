@@ -194,7 +194,6 @@ class Trainer:
             is_final_step = (istep == n_epochs-1)
             if is_final_step or istep%self.plt_conf['n_skip'] == 0:
                 self._assess_scores(istep)
-                self._record_summary()
                 self._make_plots(istep, is_final_step)
 
         # write a bash script that can be run to make gifs
@@ -287,7 +286,7 @@ class Trainer:
 
     def _make_plots(self, istep, is_final_step):
 
-        # get the plotting summary
+        # get the plotting summaries
         bcm_plot, clf_plot = {}, {}
 
         for tt in self._tt:
@@ -305,6 +304,10 @@ class Trainer:
                             'colour':defs.blue,
                             'style':lstyles[tt]}
 
+        # package them up
+        all_setups = [plot[tt] for plot in [bcm_plot, clf_plot] for tt in self._tt]
+        test_setups = [plot['test'] for plot in [bcm_plot, clf_plot]]
+
         # determine the unique id and location of the plot
         unique_id = 'final' if is_final_step else '{:04d}'.format(istep)
         def loc(name):
@@ -314,24 +317,33 @@ class Trainer:
         plot.losses(self._losses, self.run_conf, loc('losses'), unique_id)
 
         # roc plot
-        all_scores = [plot[tt] for plot in [bcm_plot, clf_plot] for tt in self._tt]
-        plot.roc_curve(all_scores, self.run_conf, loc('roc_curve'), unique_id)
+        plot.roc_curve(all_setups, self.run_conf, loc('roc_curve'), unique_id)
 
         # clf output plot
-        test_scores = [plot['test'] for plot in [bcm_plot, clf_plot]]
-        plot.clf_output(test_scores, self.run_conf, loc('clf_output'), unique_id)
+        plot.clf_output(test_setups, self.run_conf, loc('clf_output'), unique_id)
 
         # mass distro plots
         for perc in self.plt_conf['percentiles']:
             pname = 'mass_shape_{}p'.format(perc)
-            plot.mass_shape(test_scores, perc, self.run_conf, loc(pname), unique_id)
+            plot.mass_shape(test_setups, perc, self.run_conf, loc(pname), unique_id)
+
+        # KS test plots
+        plot.KS_test(test_setups, self.run_conf, loc('KS_test'), unique_id)
+
 
     def _record_summary(self):
 
+        def write_number(number, fname):
+            with open(os.path.join(self.loc, fname), 'w') as f:
+                f.write('{:2.4f}\n'.format(number))
+
         # roc auc
         roc_auc = self.clf_score['test'].roc_auc
-        with open(os.path.join(self.loc, 'roc_auc.txt'), 'w') as f:
-            f.write('{:2.4f}\n'.format(roc_auc))
+        write_number(roc_auc, 'roc_auc.txt')
+
+        # ks test
+        ks_metric = self.clf_score['test'].ks_metric
+        write_number(ks_metric, 'ks_metric.txt')
 
     def _gif(self):
 
@@ -366,6 +378,7 @@ class ClassifierScore(utils.Saveable):
         self.roc_auc = roc[2]
         self.clf_hists = clf_hists
         self.mass_hists = mass_hists
+        self.ks_metric = 0
 
     def __str__(self):
 

@@ -68,6 +68,9 @@ def losses(losses, run_conf, loc, unique_id):
     plt.close(fig)
     print(path)
 
+def gy(y1, dy):
+    for i in range(1000):
+        yield y1 - i*dy
 
 def write_conf_info(ax, run_conf, isloss=False):
 
@@ -87,10 +90,8 @@ def write_conf_info(ax, run_conf, isloss=False):
         dy = 3*dy
         dx = np.log(dx)
 
-    def gy():
-        for i in range(1000):
-            yield y1 - i*dy
-    y = gy()
+    # y position generator
+    y = gy(y1, dy)
     next(y) # skip one
 
     # loop over sections
@@ -239,6 +240,76 @@ def mass_shape(plot_setups, perc, run_conf, loc, unique_id):
     print(path)
 
 
+def KS_test(plot_setups, run_conf, loc, unique_id):
+
+    # compute the centres of the bins
+    edges = np.linspace(defs.mlow, defs.mhigh, defs.bins+1)
+    lows = edges[:-1]
+    highs = edges[1:]
+    centres = (lows+highs)*0.5
+
+    # figure
+    fig, ax = plt.subplots(2, 1, figsize=(7, 7), sharex=True, gridspec_kw={'height_ratios':[3, 1]})
+    fig.suptitle('Background-only MC')
+
+    # plotting kwargs
+    kwargs = {'bins':defs.bins, 'histtype':'step', 'range':(defs.mlow, defs.mhigh)}
+
+    y1 = 0.5
+    dy = 0.05
+    y = gy(y1, dy)
+    ax[0].text(140, next(y), 'KS metric:')
+
+    # get the full mass histo
+    for setup in plot_setups:
+
+        # get the score
+        score = setup['score']
+        ks_vals = []
+        for perc in score.mass_hists:
+
+            # get the full and the selected mass histogram
+            sel, full = score.mass_hists[perc]
+
+            # make their cumulative (normalise)
+            cum_full = np.cumsum(full) / np.sum(full)
+            cum_sel = np.cumsum(sel) / np.sum(sel)
+
+            # compute KS metric
+            ks_metric = np.max(np.abs(cum_sel-cum_full))
+            ks_vals.append(ks_metric)
+
+            # prepare for plotting
+            label = '{}, best {}%'.format(setup['label'], perc)
+            alpha = (perc+100)/200.
+
+            # and plot them
+            ax[0].hist(centres, weights=cum_sel, color=setup['colour'], label=label, alpha=alpha, **kwargs)
+            ax[0].text(140, next(y), '{}: {:2.2f}'.format(label, ks_metric), fontsize=10)
+
+            # and bottom panel
+            ax[1].hist(centres, weights=cum_full-cum_sel, color=setup['colour'], alpha=alpha, **kwargs)
+
+        # choose the largest one as the metric
+        score.ks_metric = max(ks_vals)
+
+    # plot the full spectrum as well
+    ax[0].hist(centres, weights=cum_full, color='r', label='No cut', **kwargs)
+
+    # settings
+    ax[0].set_xlim(defs.mlow, defs.mhigh)
+    write_conf_info(ax[0], run_conf)
+    ax[0].legend(loc='best', fontsize=10)
+    ax[0].set_ylabel('Normalised cumulative events')
+    ax[1].set_ylabel('Full - Selected')
+    ax[1].set_xlim(defs.mlow, defs.mhigh)
+    ax[1].set_xlabel('Invariant mass [GeV]')
+
+    # save
+    path = os.path.join(loc, 'KS_test_{}.pdf'.format(unique_id))
+    plt.savefig(path)
+    plt.close(fig)
+    print(path)
 
 
 
