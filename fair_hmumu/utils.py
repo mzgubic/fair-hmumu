@@ -12,13 +12,18 @@ def makedir(d):
 
     return d
 
+
 def write_job(commands, job_path):
+
+    # make dir if needed
+    job_dir = makedir(os.path.split(job_path)[0])
 
     # default contents
     contents = [
                 '#!/bin/sh',
                 'cd {}'.format(os.getenv('SRC')),
                 'source setup_env.sh',
+                'cd {}'.format(job_dir),
                 ]
 
     # add the commands requested
@@ -33,26 +38,23 @@ def write_job(commands, job_path):
         for line in contents:
             f.write(line+'\n')
 
+
 def send_job(job_path):
 
-    job_base, _ = os.path.splitext(job_path)
     job_dir = os.path.dirname(job_path)
-    submit_file_path = job_base + ".submit"
+    condor_submit = os.path.splitext(job_path)[0] + ".submit"
 
-    with open(submit_file_path, 'w') as submit_file:
-        submit_file.write("executable = " + job_path + "\n")
-        submit_file.write("universe = vanilla\n")
-        submit_file.write("output = " + os.path.join(job_dir, "output.$(Process)\n"))
-        submit_file.write("error = " + os.path.join(job_dir, "error.$(Process)\n"))
-        submit_file.write("log = " + os.path.join(job_dir, "log.$(Process)\n"))
-        submit_file.write("notification = never\n")
-        submit_file.write("should_transfer_files = Yes\n")
-        submit_file.write("when_to_transfer_output = ON_EXIT\n")
-        submit_file.write("queue 1")
+    with open(condor_submit, 'w') as f:
+        f.write('executable = {}\n'.format(job_path))
+        f.write('arguments  = $(ClusterID)\n')
+        f.write('output     = {}/$(ClusterId).out\n'.format(job_dir))
+        f.write('error      = {}/$(ClusterId).err\n'.format(job_dir))
+        f.write('log        = {}/$(ClusterId).log\n'.format(job_dir))
+        f.write('queue\n')
 
     # call the job submitter
-    sp.check_output(['condor_submit', submit_file_path])
-    print("submitted '" + submit_file_path + "'")
+    sp.check_output(['condor_submit', condor_submit])
+    print("submitted '" + condor_submit + "'")
 
 
 class Saveable:
