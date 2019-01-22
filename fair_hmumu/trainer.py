@@ -2,6 +2,7 @@ import os
 import numpy as np
 import sklearn
 from sklearn.ensemble import GradientBoostingClassifier
+from xgboost import XGBClassifier
 from fair_hmumu import defs
 from fair_hmumu import plot
 from fair_hmumu import models
@@ -29,10 +30,10 @@ class Trainer:
         print('--- Settings:')
         print(self.clf)
         print(self.adv)
-        print(self.opt_conf)
-        print(self.trn_conf)
-        print(self.bcm_conf)
-        print(self.plt_conf)
+        print('Optimisation', self.opt_conf)
+        print('Training', self.trn_conf)
+        print('Benchmark', self.bcm_conf)
+        print('Plotting', self.plt_conf)
         print('------------')
 
         # load the data handler and the data
@@ -140,6 +141,8 @@ class Trainer:
         # instantiate the model
         if self.bcm_conf['type'] == 'GBC':
             self.bcm = GradientBoostingClassifier(**bcm_hps)
+        if self.bcm_conf['type'] == 'XGB':
+            self.bcm = XGBClassifier(**bcm_hps)
 
         # training set is very unbalanced, fit without the weights
         self.bcm.fit(self._ds['train']['X'], self._ds['train']['Y'].ravel())
