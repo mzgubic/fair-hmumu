@@ -75,7 +75,7 @@ def gy(y1, dy):
 def write_conf_info(ax, run_conf, isloss=False):
 
     # params
-    fontsize = 10
+    fontsize = 8
 
     # get data
     if not isinstance(run_conf, dict):
@@ -84,10 +84,10 @@ def write_conf_info(ax, run_conf, isloss=False):
     y0, y1 = ax.get_ylim()
 
     # three equal panels in loss, no space in one
-    dy = (y1-y0)/30
+    dy = (y1-y0)/35
     dx = 0.05*(x1-x0)
     if isloss:
-        dy = 3*dy
+        dy = 2.5*dy
         dx = np.log(dx)
 
     # y position generator
@@ -107,13 +107,18 @@ def write_conf_info(ax, run_conf, isloss=False):
             ax.text(x0+dx, next(y), '{}: {}'.format(option, value), fontsize=fontsize)
 
 
-def roc_curve(plot_setups, run_conf, loc, unique_id):
+def roc_curve(plot_setups, run_conf, loc, unique_id, zoom=True):
 
     # plot
     fig, ax = plt.subplots(figsize=(7, 7))
 
-    y0 = 0.5
-    dy = 0.05
+    # zoom
+    if zoom:
+        ax.set_xlim(0.95, 1.0)
+        ax.set_ylim(0.0, 0.05)
+
+    y0 = 0.025 if zoom else 0.5
+    dy = 0.002 if zoom else 0.05
     ax.text(0.5, y0, 'ROC AUC:')
     for i, setup in enumerate(plot_setups):
 
@@ -122,11 +127,11 @@ def roc_curve(plot_setups, run_conf, loc, unique_id):
         ax.plot(1-fprs, tprs, color=setup['colour'], linestyle=setup['style'], label=setup['label'])
 
         # add ROC AUC score
-        ax.text(0.5, y0-dy*(i+1), '{}: {:2.2f}'.format(setup['label'], setup['score'].roc_auc))
+        x = 0.975 if zoom else 0.5
+        ax.text(x, y0-dy*(i+1), '{}: {:2.2f}'.format(setup['label'], setup['score'].roc_auc))
 
     # add run conf text
     write_conf_info(ax, run_conf)
-
 
     # settings
     ax.legend(loc='best', fontsize=10)
@@ -134,7 +139,7 @@ def roc_curve(plot_setups, run_conf, loc, unique_id):
     ax.set_ylabel('Signal efficiency')
 
     # save
-    path = os.path.join(loc, 'roc_curve_{}.pdf'.format(unique_id))
+    path = os.path.join(loc, 'roc_curve_zoom{}_{}.pdf'.format(zoom, unique_id))
     plt.savefig(path)
     plt.close(fig)
     print(path)

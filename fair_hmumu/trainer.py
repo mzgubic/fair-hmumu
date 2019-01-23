@@ -58,7 +58,6 @@ class Trainer:
         # set up TensorFlow environment
         self._setup_environment()
 
-
     def _load_data(self):
 
         # features preparation
@@ -324,7 +323,8 @@ class Trainer:
         plot.losses(self._losses, self.run_conf, loc('losses'), unique_id)
 
         # roc plot
-        plot.roc_curve(all_setups, self.run_conf, loc('roc_curve'), unique_id)
+        plot.roc_curve(all_setups, self.run_conf, loc('roc_curve'), unique_id, zoom=True)
+        plot.roc_curve(all_setups, self.run_conf, loc('roc_curve'), unique_id, zoom=False)
 
         # clf output plot
         plot.clf_output(test_setups, self.run_conf, loc('clf_output'), unique_id)
