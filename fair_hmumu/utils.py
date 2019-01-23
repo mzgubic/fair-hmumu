@@ -17,12 +17,12 @@ def write_job(commands, job_path):
 
     # make dir if needed
     job_dir = makedir(os.path.split(job_path)[0])
+    src_dir = os.getenv('SRC')
 
     # default contents
     contents = [
                 '#!/bin/sh',
-                'cd {}'.format(os.getenv('SRC')),
-                'source setup_env.sh',
+                'source {}/setup_env.sh'.format(src_dir),
                 'cd {}'.format(job_dir),
                 ]
 
