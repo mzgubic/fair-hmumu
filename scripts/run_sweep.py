@@ -33,7 +33,7 @@ def main():
         # make the command
         e = os.path.join(os.getenv('SRC'), 'scripts', 'run_point.py')
         p = run_conf.path
-        command = 'python3 {} -p {}'.format(e, p)
+        command = 'time python3 {} -p {}'.format(e, p)
 
         # run the command (submit)
         if args.batch:
