@@ -13,6 +13,9 @@ def main():
                         help='Path of the point config')
     args = parser.parse_args()
 
+    # report memory
+    os.system('free -h')
+
     # get the location and configuration file
     run_conf = fair_hmumu.configuration.Configuration(args.point)
 
