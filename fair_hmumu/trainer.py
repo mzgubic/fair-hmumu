@@ -43,7 +43,6 @@ class Trainer:
         self._load_data()
 
         # prepare losses
-
         self._losses = {tt:{n:[] for n in ['C', 'A', 'CA', 'BCM']} for tt in self._tt}
 
         # prepare classifier scores
@@ -60,15 +59,9 @@ class Trainer:
 
     def _load_data(self):
 
-        # features preparation
-        muon_vectors_pt = ['Muons_Eta_Lead', 'Muons_Eta_Sub', 'Muons_Phi_Lead', 'Muons_Phi_Sub', 'Muons_PT_Lead', 'Muons_PT_Sub']
-        muon_vectors_ptm = ['Muons_Eta_Lead', 'Muons_Eta_Sub', 'Muons_Phi_Lead', 'Muons_Phi_Sub', 'Muons_PTM_Lead', 'Muons_PTM_Sub']
-        dimuon_vector_ptm = ['Z_Eta', 'Z_Phi', 'Z_PTM']
-        wisconsin = muon_vectors_ptm + dimuon_vector_ptm
-
         # data handling
         production = self.trn_conf['production']
-        features = wisconsin
+        features = self.trn_conf['features']
         entrystop = self.trn_conf['entrystop']
         self.dh = DatasetHandler(production, features, entrystop=entrystop, test_frac=0.25, seed=42)
 

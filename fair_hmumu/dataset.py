@@ -21,8 +21,8 @@ class DatasetHandler:
         # settings
         self.production = production
         self.loc = os.path.join(os.getenv('DATA'), production)
-        self.features = list(features)
-        self.branches = list(features) + [defs.target, defs.mass, defs.weight]
+        self.features = self._list_features(features, 'jet0') # TODO
+        self.branches = self.features + [defs.target, defs.mass, defs.weight]
         self.entrystop = entrystop
         self.seed = seed
         self.test_frac = test_frac
@@ -76,6 +76,21 @@ class DatasetHandler:
         W = df[defs.weight].values.reshape(-1, 1)
 
         return {'X':X, 'Y':Y, 'Z':Z, 'W':W}
+
+    def _list_features(self, features, njet):
+
+        # features preparation
+        muon_vectors_pt = ['Muons_Eta_Lead', 'Muons_Eta_Sub', 'Muons_Phi_Lead', 'Muons_Phi_Sub', 'Muons_PT_Lead', 'Muons_PT_Sub']
+        muon_vectors_ptm = ['Muons_Eta_Lead', 'Muons_Eta_Sub', 'Muons_Phi_Lead', 'Muons_Phi_Sub', 'Muons_PTM_Lead', 'Muons_PTM_Sub']
+        dimuon_vector_pt = ['Z_Eta', 'Z_Phi', 'Z_PT']
+        dimuon_vector_ptm = ['Z_Eta', 'Z_Phi', 'Z_PTM']
+
+        flist = []
+        if features == 'pt/mass':
+            flist = muon_vectors_ptm + dimuon_vector_ptm
+
+        return flist
+        
 
     def get_train(self, njet):
         """
