@@ -29,6 +29,8 @@ class DatasetHandler:
         self.test_frac = test_frac
 
         # set up
+        print('--- Selecting features for {} channel'.format(self.njet))
+        print('-> {}'.format(self.features))
         self._load()
         self._split()
 
@@ -80,16 +82,35 @@ class DatasetHandler:
 
     def _list_features(self, features):
 
-        # TODO: add dependence on njets 
-        # features preparation
+        # muon features preparation
         muon_vectors_pt = ['Muons_Eta_Lead', 'Muons_Eta_Sub', 'Muons_Phi_Lead', 'Muons_Phi_Sub', 'Muons_PT_Lead', 'Muons_PT_Sub']
         muon_vectors_ptm = ['Muons_Eta_Lead', 'Muons_Eta_Sub', 'Muons_Phi_Lead', 'Muons_Phi_Sub', 'Muons_PTM_Lead', 'Muons_PTM_Sub']
+
+        # dimuon
         dimuon_vector_pt = ['Z_Eta', 'Z_Phi', 'Z_PT']
         dimuon_vector_ptm = ['Z_Eta', 'Z_Phi', 'Z_PTM']
 
+        # jet
+        lead_jet = ['Jets_PT_Lead', 'Jets_Eta_Lead', 'Jets_Phi_Lead']
+        sub_jet = ['Jets_PT_Sub', 'Jets_Eta_Sub', 'Jets_Phi_Sub']
+
+        # dijet
+        dijet = ['Jets_PT_jj', 'Jets_Minv_jj']
+
+        # muon features
         flist = []
         if features == 'pt/mass':
             flist = muon_vectors_ptm + dimuon_vector_ptm
+
+        elif features == 'pt':
+            flist = muon_vectors_pt + dimuon_vector_pt
+
+        # jet features
+        if self.njet == defs.jet1:
+            flist += lead_jet
+
+        if self.njet == defs.jet2:
+            flist += sub_jet + dijet
 
         return flist
         
