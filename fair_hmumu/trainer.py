@@ -63,12 +63,13 @@ class Trainer:
         production = self.trn_conf['production']
         features = self.trn_conf['features']
         entrystop = self.trn_conf['entrystop']
-        self.dh = DatasetHandler(production, features, entrystop=entrystop, test_frac=0.25, seed=42)
+        njet = self.trn_conf['njet']
+        self.dh = DatasetHandler(production, njet, features, entrystop=entrystop, test_frac=0.25, seed=42)
 
         # load
-        self._ds['train'] = self.dh.get_train(self.trn_conf['channel'])
-        self._ds['test'] = self.dh.get_test(self.trn_conf['channel'])
-        self._ds['ss'] = self.dh.get_ss(self.trn_conf['channel'])
+        self._ds['train'] = self.dh.get_train()
+        self._ds['test'] = self.dh.get_test()
+        self._ds['ss'] = self.dh.get_ss()
 
     def _fit_preprocessing(self):
 
@@ -78,7 +79,7 @@ class Trainer:
             # fit the data preprocessing for the features and the mass
             self.pre[xz] = PCAWhiteningPreprocessor(n_cpts=self._ds['train'][xz].shape[1])
             self.pre[xz].fit(self._ds['train'][xz])
-            self.pre[xz].save(os.path.join(self.loc, 'PCA_{}_{}.pkl'.format(xz, self.trn_conf['channel'])))
+            self.pre[xz].save(os.path.join(self.loc, 'PCA_{}.pkl'.format(xz)))
 
             # apply it to the datasets
             for tts in self._tts:
@@ -88,7 +89,7 @@ class Trainer:
 
         # set up the tensorflow environment in which the graphs are built and executed
         self.env = TFEnvironment(self.clf, self.adv, self.opt_conf)
-        self.env.build(self.transform(self.dh.get_batch(self.trn_conf['channel'])))
+        self.env.build(self.transform(self.dh.get_batch()))
         self.env.initialise_variables()
 
     def transform(self, batch):
@@ -114,14 +115,14 @@ class Trainer:
 
         # pretrain the classifier
         for _ in range(self.trn_conf['n_pre']):
-            batch = self.dh.get_batch(self.trn_conf['channel'])
+            batch = self.dh.get_batch()
             batch = self.transform(batch)
             self.env.pretrain_step(batch)
             self._assess_losses()
 
         # pretrain the adversary
         for _ in range(self.trn_conf['n_pre']):
-            batch = self.dh.get_batch(self.trn_conf['channel'])
+            batch = self.dh.get_batch()
             batch = self.transform(batch)
             self.env.train_step_adv(batch)
             self._assess_losses()
@@ -176,13 +177,13 @@ class Trainer:
 
             # train the classifier
             for _ in range(self.trn_conf['n_clf']):
-                batch = self.dh.get_batch(self.trn_conf['channel'])
+                batch = self.dh.get_batch()
                 batch = self.transform(batch)
                 self.env.train_step_clf(batch)
 
             # train the adversary
             for _ in range(self.trn_conf['n_adv']):
-                batch = self.dh.get_batch(self.trn_conf['channel'])
+                batch = self.dh.get_batch()
                 batch = self.transform(batch)
                 self.env.train_step_adv(batch)
 

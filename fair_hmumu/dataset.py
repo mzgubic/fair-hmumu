@@ -8,7 +8,7 @@ from fair_hmumu import defs
 
 class DatasetHandler:
 
-    def __init__(self, production, features, entrystop=1000, test_frac=0.25, seed=42):
+    def __init__(self, production, njet, features, entrystop=1000, test_frac=0.25, seed=42):
         """
         Dataset handler. Split in training and test sets, get training batches.
 
@@ -20,8 +20,9 @@ class DatasetHandler:
 
         # settings
         self.production = production
+        self.njet = njet
         self.loc = os.path.join(os.getenv('DATA'), production)
-        self.features = self._list_features(features, 'jet0') # TODO
+        self.features = self._list_features(features)
         self.branches = self.features + [defs.target, defs.mass, defs.weight]
         self.entrystop = entrystop
         self.seed = seed
@@ -35,29 +36,29 @@ class DatasetHandler:
 
         print('--- Loading the datasets')
 
-        self.df = {ds:{njet:{} for njet in defs.channels} for ds in defs.datasets}
+        self.df = {ds:{} for ds in defs.datasets}
 
-        for dataset, njet in itertools.product(defs.datasets, defs.channels):
+        for dataset in defs.datasets:
 
             # get the tree
             fname = '{}/{}.root'.format(self.loc, dataset)
-            tree = ur.open(fname)[njet]
+            tree = ur.open(fname)[self.njet]
 
             # get the array
             arrays = tree.arrays(branches=self.branches, entrystop=self.entrystop)
 
             # convert it to a DataFrame and decode column names to strings
-            self.df[dataset][njet]['full'] = pd.DataFrame(arrays)
-            self.df[dataset][njet]['full'].columns = [feature.decode('utf-8') for feature in self.df[dataset][njet]['full'].columns]
+            self.df[dataset]['full'] = pd.DataFrame(arrays)
+            self.df[dataset]['full'].columns = [feature.decode('utf-8') for feature in self.df[dataset]['full'].columns]
 
     def _split(self):
 
         print('--- Splitting into training and test sets')
 
-        for dataset, njet in itertools.product(defs.datasets, defs.channels):
+        for dataset in defs.datasets:
 
             # get the training and test set indices
-            nentries = self.df[dataset][njet]['full'].shape[0]
+            nentries = self.df[dataset]['full'].shape[0]
             indices = np.arange(nentries)
             np.random.seed(self.seed)
             np.random.shuffle(indices)
@@ -65,8 +66,8 @@ class DatasetHandler:
             ind_train, ind_test = indices[split_at:], indices[:split_at]
 
             # split
-            self.df[dataset][njet]['train'] = self.df[dataset][njet]['full'].iloc[ind_train]
-            self.df[dataset][njet]['test'] = self.df[dataset][njet]['full'].iloc[ind_test]
+            self.df[dataset]['train'] = self.df[dataset]['full'].iloc[ind_train]
+            self.df[dataset]['test'] = self.df[dataset]['full'].iloc[ind_test]
 
     def _xyzw(self, df):
 
@@ -77,8 +78,9 @@ class DatasetHandler:
 
         return {'X':X, 'Y':Y, 'Z':Z, 'W':W}
 
-    def _list_features(self, features, njet):
+    def _list_features(self, features):
 
+        # TODO: add dependence on njets 
         # features preparation
         muon_vectors_pt = ['Muons_Eta_Lead', 'Muons_Eta_Sub', 'Muons_Phi_Lead', 'Muons_Phi_Sub', 'Muons_PT_Lead', 'Muons_PT_Sub']
         muon_vectors_ptm = ['Muons_Eta_Lead', 'Muons_Eta_Sub', 'Muons_Phi_Lead', 'Muons_Phi_Sub', 'Muons_PTM_Lead', 'Muons_PTM_Sub']
@@ -92,15 +94,15 @@ class DatasetHandler:
         return flist
         
 
-    def get_train(self, njet):
+    def get_train(self):
         """
         Get the entire training set.
         """
         print('--- Fetching full training set')
 
         # fetch components
-        sig = self.df[defs.sig][njet]['train']
-        data = self.df[defs.data][njet]['train']
+        sig = self.df[defs.sig]['train']
+        data = self.df[defs.data]['train']
 
         # concatenate and reshuffle
         result = pd.concat([sig, data])
@@ -110,15 +112,15 @@ class DatasetHandler:
 
         return self._xyzw(result)
 
-    def get_test(self, njet):
+    def get_test(self):
         """
         Get the entire test set.
         """
         print('--- Fetching full test set')
 
         # fetch components
-        sig = self.df[defs.sig][njet]['test']
-        data = self.df[defs.data][njet]['test']
+        sig = self.df[defs.sig]['test']
+        data = self.df[defs.data]['test']
 
         # concatenate and reshuffle
         result = pd.concat([sig, data])
@@ -128,13 +130,13 @@ class DatasetHandler:
 
         return self._xyzw(result)
 
-    def get_ss(self, njet, nentries=None):
+    def get_ss(self, nentries=None):
         """
         Get nentries events from spurious signal data.
         """
 
         # fetch full ds
-        df = self.df[defs.ss][njet]['full']
+        df = self.df[defs.ss]['full']
 
         # num entries in df
         all_entries = df.shape[0]
@@ -149,15 +151,15 @@ class DatasetHandler:
 
         return self._xyzw(df.iloc[:nentries])
 
-    def get_batch(self, njet, batchsize=512):
+    def get_batch(self, batchsize=512):
         """
         Get a balanced batch of randomly sampled training data.
         """
         assert batchsize % 2 == 0, "batchsize must be even"
 
         # fetch signal and background events
-        sig = self.df[defs.sig][njet]['train']
-        data = self.df[defs.data][njet]['train']
+        sig = self.df[defs.sig]['train']
+        data = self.df[defs.data]['train']
 
         # sample half batchsize from each
         neach = int(batchsize/2.)
