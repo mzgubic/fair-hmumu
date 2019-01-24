@@ -91,6 +91,8 @@ class DatasetHandler:
         result = pd.concat([sig, data])
         result = result.sample(frac=1).reset_index(drop=True)
 
+        print('-> {} events'.format(result.shape[0]))
+
         return self._xyzw(result)
 
     def get_test(self, njet):
@@ -106,6 +108,8 @@ class DatasetHandler:
         # concatenate and reshuffle
         result = pd.concat([sig, data])
         result = result.sample(frac=1).reset_index(drop=True)
+
+        print('-> {} events'.format(result.shape[0]))
 
         return self._xyzw(result)
 
