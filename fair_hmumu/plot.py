@@ -54,7 +54,7 @@ def losses(losses, run_conf, loc, unique_id):
 
         # scale and legends
         ax[i].set_xscale('log')
-        ax[i].legend(loc='best', fontsize=10)
+        ax[i].legend(loc='upper right', fontsize=10)
 
     # styling
     write_conf_info(ax[0], {s:run_conf[s] for s in run_conf if s in ['Classifier', 'Benchmark']}, isloss=True)
