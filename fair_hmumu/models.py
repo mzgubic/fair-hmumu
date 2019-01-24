@@ -145,8 +145,17 @@ class GaussMixNLLAdversary(Adversary):
 
         likelihood = 0
         for c in range(n_components):
-            likelihood += pi[:, c] * ((1. / np.sqrt(2. * np.pi)) / sigma[:, c] *
-                               tf.math.exp(-(self.sensitive - mu[:, c]) ** 2 / (2. * sigma[:, c] ** 2)))
+
+            # normalisation
+            norm_vec = tf.reshape(pi[:, c] * (1. / np.sqrt(2. * np.pi)) / sigma[:, c], shape=(-1, 1))
+
+            # exponential
+            mu_vec = tf.reshape(mu[:, c], shape=(-1, 1))
+            sigma_vec = tf.reshape(sigma[:, c], shape=(-1, 1))
+            exp = tf.math.exp(-(self.sensitive - mu_vec) ** 2 / (2. * sigma_vec ** 2))
+
+            # add to likelihood
+            likelihood += norm_vec * exp
 
         # make the loss
         self.nll = - tf.math.log(likelihood)
