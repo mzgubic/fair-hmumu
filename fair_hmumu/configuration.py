@@ -119,6 +119,19 @@ class Configuration:
 
         return ret[:-1]
 
+    def make_new_runconf_dir(self):
+
+        for i in itertools.count():
+
+            # does this run dir already exist?
+            trial_path = os.path.join(self.loc, 'points', 'run{}'.format(i))
+
+            # try next one if it exists, otherwise return the path
+            if os.path.exists(trial_path):
+                continue
+            else:
+                return utils.makedir(trial_path)
+
     def __iter__(self):
         """
         If it is a sweep conf, iterate over run confs.
@@ -146,13 +159,15 @@ class Configuration:
             combinations = list(itertools.product(*lists))
 
             # loop over combinations and make run configs
-            for i, comb in enumerate(combinations):
+            for comb in combinations:
 
+                # construct the run conf dictionary
                 par_dict = fixed
                 for (section, option), value in zip(desc, comb):
                     par_dict[section][option] = value
 
-                loc = utils.makedir(os.path.join(self.loc, 'points', 'run{}'.format(i)))
+                # get location and write the run conf
+                loc = self.make_new_runconf_dir()
                 run_conf = Configuration.from_dict(par_dict, os.path.join(loc, 'run_conf.ini'))
                 run_conf.write()
 
