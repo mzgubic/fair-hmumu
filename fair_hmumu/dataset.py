@@ -15,7 +15,7 @@ class DatasetHandler:
 
         Args:
             production (str): Name of the input dataset production
-            features (list of str): List of branch names to be used in the training.
+            features (list of str): List of all features
             entrystop (int or None): Maximum number of read rows. None reads all.
         """
 
@@ -23,7 +23,7 @@ class DatasetHandler:
         self.production = production
         self.njet = njet
         self.loc = os.path.join(os.getenv('DATA'), production)
-        self.features = self._list_features(features)
+        self.features = features
         self.branches = self.features + [defs.target, defs.mass, defs.weight]
         self.entrystop = entrystop
         self.seed = seed
@@ -74,51 +74,17 @@ class DatasetHandler:
             self.df[dataset]['train'] = self.df[dataset]['full'].iloc[ind_train]
             self.df[dataset]['test'] = self.df[dataset]['full'].iloc[ind_test]
 
-    def _xyzw(self, df):
+    def _xyzw(self, df, features):
 
-        X = df[self.features].values
+        X = df[features].values
         Y = df[defs.target].values.reshape(-1, 1)
         Z = df[defs.mass].values.reshape(-1, 1)
         W = df[defs.weight].values.reshape(-1, 1)
 
         return {'X':X, 'Y':Y, 'Z':Z, 'W':W}
 
-    def _list_features(self, features):
-
-        # muon features preparation
-        muon_vectors_pt = ['Muons_Eta_Lead', 'Muons_Eta_Sub', 'Muons_Phi_Lead', 'Muons_Phi_Sub', 'Muons_PT_Lead', 'Muons_PT_Sub']
-        muon_vectors_ptm = ['Muons_Eta_Lead', 'Muons_Eta_Sub', 'Muons_Phi_Lead', 'Muons_Phi_Sub', 'Muons_PTM_Lead', 'Muons_PTM_Sub']
-
-        # dimuon
-        dimuon_vector_pt = ['Z_Eta', 'Z_Phi', 'Z_PT']
-        dimuon_vector_ptm = ['Z_Eta', 'Z_Phi', 'Z_PTM']
-
-        # jet
-        lead_jet = ['Jets_PT_Lead', 'Jets_Eta_Lead', 'Jets_Phi_Lead']
-        sub_jet = ['Jets_PT_Sub', 'Jets_Eta_Sub', 'Jets_Phi_Sub']
-
-        # dijet
-        dijet = ['Jets_PT_jj', 'Jets_Minv_jj']
-
-        # muon features
-        flist = []
-        if features == 'pt/mass':
-            flist = muon_vectors_ptm + dimuon_vector_ptm
-
-        elif features == 'pt':
-            flist = muon_vectors_pt + dimuon_vector_pt
-
-        # jet features
-        if self.njet == defs.jet1:
-            flist += lead_jet
-
-        if self.njet == defs.jet2:
-            flist += sub_jet + dijet
-
-        return flist
-
     @timeit
-    def get_train(self):
+    def get_train(self, features):
         """
         Get the entire training set.
         """
@@ -134,10 +100,10 @@ class DatasetHandler:
 
         print('-> {} events'.format(result.shape[0]))
 
-        return self._xyzw(result)
+        return self._xyzw(result, features)
 
     @timeit
-    def get_test(self):
+    def get_test(self, features):
         """
         Get the entire test set.
         """
@@ -153,10 +119,10 @@ class DatasetHandler:
 
         print('-> {} events'.format(result.shape[0]))
 
-        return self._xyzw(result)
+        return self._xyzw(result, features)
 
     @timeit
-    def get_ss(self, nentries=None):
+    def get_ss(self, features, nentries=None):
         """
         Get nentries events from spurious signal data.
         """
@@ -175,9 +141,9 @@ class DatasetHandler:
 
         print('--- Fetching {}/{} spurious signal events.'.format(nentries, all_entries))
 
-        return self._xyzw(df.iloc[:nentries])
+        return self._xyzw(df.iloc[:nentries], features)
 
-    def get_batch(self, batchsize=512):
+    def get_batch(self, features, batchsize=512):
         """
         Get a balanced batch of randomly sampled training data.
         """
@@ -203,6 +169,54 @@ class DatasetHandler:
         result = pd.concat([sig, data])
         result = result.sample(frac=1).reset_index(drop=True)
 
-        return self._xyzw(result)
+        return self._xyzw(result, features)
 
+
+def feature_list(collections, njet):
+
+    # feature list
+    fset = set()
+
+    # muon features preparation
+    muon_vectors_pt = ['Muons_Eta_Lead', 'Muons_Eta_Sub', 'Muons_Phi_Lead', 'Muons_Phi_Sub', 'Muons_PT_Lead', 'Muons_PT_Sub']
+    muon_vectors_ptm = ['Muons_Eta_Lead', 'Muons_Eta_Sub', 'Muons_Phi_Lead', 'Muons_Phi_Sub', 'Muons_PTM_Lead', 'Muons_PTM_Sub']
+
+    # dimuon
+    dimuon_vector_pt = ['Z_Eta', 'Z_Phi', 'Z_PT']
+    dimuon_vector_ptm = ['Z_Eta', 'Z_Phi', 'Z_PTM']
+
+    # jet
+    lead_jet = ['Jets_PT_Lead', 'Jets_Eta_Lead', 'Jets_Phi_Lead']
+    sub_jet = ['Jets_PT_Sub', 'Jets_Eta_Sub', 'Jets_Phi_Sub']
+
+    # dijet
+    dijet = ['Jets_PT_jj', 'Jets_Minv_jj']
+
+    # how to add one collection
+    def add_collection(collection):
+        if collection == 'pt/mass':
+            for var in muon_vectors_ptm + dimuon_vector_ptm:
+                fset.add(var)
+
+        elif collection == 'pt':
+            for var in muon_vectors_pt + dimuon_vector_pt:
+                fset.add(var)
+
+        if njet == defs.jet1:
+            for var in lead_jet:
+                fset.add(var)
+
+        if njet == defs.jet2:
+            for var in sub_jet + dijet:
+                fset.add(var)
+    
+    # actually
+    if isinstance(collections, str):
+        add_collection(collections)
+
+    elif isinstance(collections, list):
+        for col in collections:
+            add_collection(col)
+
+    return list(fset)
 

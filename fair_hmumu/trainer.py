@@ -7,8 +7,8 @@ from fair_hmumu import defs
 from fair_hmumu import plot
 from fair_hmumu import models
 from fair_hmumu import utils
+from fair_hmumu import dataset
 from fair_hmumu.utils import timeit
-from fair_hmumu.dataset import DatasetHandler
 from fair_hmumu.preprocessing import PCAWhiteningPreprocessor
 from fair_hmumu.environment import TFEnvironment
 
@@ -38,6 +38,10 @@ class Trainer:
         print('------------')
 
         # load the data handler and the data
+        self.njet = self.trn_conf['njet']
+        self.dh = None
+        self.bcm_features = dataset.feature_list(self.trn_conf['bcm_features'], self.njet)
+        self.clf_features = dataset.feature_list(self.trn_conf['clf_features'], self.njet)
         self._ds = {}
         self._tt = ['train', 'test']
         self._tts = ['train', 'test', 'ss']
@@ -62,15 +66,14 @@ class Trainer:
 
         # data handling
         production = self.trn_conf['production']
-        features = self.trn_conf['features']
+        features = self.bcm_features + self.clf_features
         entrystop = self.trn_conf['entrystop']
-        njet = self.trn_conf['njet']
-        self.dh = DatasetHandler(production, njet, features, entrystop=entrystop, test_frac=0.25, seed=42)
-
+        self.dh = dataset.DatasetHandler(production, self.njet, features, entrystop=entrystop, test_frac=0.25, seed=42)
+        
         # load
-        self._ds['train'] = self.dh.get_train()
-        self._ds['test'] = self.dh.get_test()
-        self._ds['ss'] = self.dh.get_ss()
+        self._ds['train'] = self.dh.get_train(self.clf_features)
+        self._ds['test'] = self.dh.get_test(self.clf_features)
+        self._ds['ss'] = self.dh.get_ss(self.clf_features)
 
     def _fit_preprocessing(self):
 
@@ -90,7 +93,7 @@ class Trainer:
 
         # set up the tensorflow environment in which the graphs are built and executed
         self.env = TFEnvironment(self.clf, self.adv, self.opt_conf)
-        self.env.build(self.transform(self.dh.get_batch()))
+        self.env.build(self.transform(self.dh.get_batch(self.clf_features)))
         self.env.initialise_variables()
 
     def transform(self, batch):
@@ -117,14 +120,14 @@ class Trainer:
 
         # pretrain the classifier
         for _ in range(self.trn_conf['n_pre']):
-            batch = self.dh.get_batch()
+            batch = self.dh.get_batch(self.clf_features)
             batch = self.transform(batch)
             self.env.pretrain_step(batch)
             self._assess_losses()
 
         # pretrain the adversary
         for _ in range(self.trn_conf['n_pre']):
-            batch = self.dh.get_batch()
+            batch = self.dh.get_batch(self.clf_features)
             batch = self.transform(batch)
             self.env.train_step_adv(batch)
             self._assess_losses()
@@ -182,13 +185,13 @@ class Trainer:
 
             # train the classifier
             for _ in range(self.trn_conf['n_clf']):
-                batch = self.dh.get_batch()
+                batch = self.dh.get_batch(self.clf_features)
                 batch = self.transform(batch)
                 self.env.train_step_clf(batch)
 
             # train the adversary
             for _ in range(self.trn_conf['n_adv']):
-                batch = self.dh.get_batch()
+                batch = self.dh.get_batch(self.clf_features)
                 batch = self.transform(batch)
                 self.env.train_step_adv(batch)
 
