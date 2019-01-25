@@ -253,10 +253,15 @@ class Trainer:
 
     def _get_roc(self, pred, label, weight):
 
+        # get roc curve
         fprs, tprs, _ = sklearn.metrics.roc_curve(label, pred.ravel(), sample_weight=weight)
         roc_auc = sklearn.metrics.roc_auc_score(label, pred.ravel(), sample_weight=weight)
 
-        return fprs, tprs, roc_auc
+        # compute the signal efficiency at 99% background rejection
+        # WARNING: need to have monotonically increasing inputs to np.interp, otherwise results are rubbish
+        sig_eff = np.interp(1-0.99, fprs, tprs)
+
+        return fprs, tprs, roc_auc, sig_eff
 
     def _get_clf_hists(self, ss_pred):
 
@@ -356,6 +361,10 @@ class Trainer:
         write_number(self.clf_score['test'].roc_auc, 'roc_auc_clf.txt')
         write_number(self.bcm_score['test'].roc_auc, 'roc_auc_bcm.txt')
 
+        # sig eff at 99% bkg rejection
+        write_number(self.clf_score['test'].sig_eff, 'sig_eff_clf.txt')
+        write_number(self.bcm_score['test'].sig_eff, 'sig_eff_bcm.txt')
+
         # ks test
         write_number(self.clf_score['test'].ks_metric, 'ks_metric_clf.txt')
         write_number(self.bcm_score['test'].ks_metric, 'ks_metric_bcm.txt')
@@ -391,6 +400,7 @@ class ClassifierScore(utils.Saveable):
         self.fname = '{}_score.pkl'.format(self.name)
         self.roc_curve = roc[:2]
         self.roc_auc = roc[2]
+        self.sig_eff = roc[3]
         self.clf_hists = clf_hists
         self.mass_hists = mass_hists
         self.ks_metric = 0
