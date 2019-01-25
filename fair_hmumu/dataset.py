@@ -4,6 +4,7 @@ import numpy as np
 import uproot as ur
 import pandas as pd
 from fair_hmumu import defs
+from fair_hmumu.utils import timeit
 
 
 class DatasetHandler:
@@ -34,6 +35,7 @@ class DatasetHandler:
         self._load()
         self._split()
 
+    @timeit
     def _load(self):
 
         print('--- Loading the datasets')
@@ -53,6 +55,7 @@ class DatasetHandler:
             self.df[dataset]['full'] = pd.DataFrame(arrays)
             self.df[dataset]['full'].columns = [feature.decode('utf-8') for feature in self.df[dataset]['full'].columns]
 
+    @timeit
     def _split(self):
 
         print('--- Splitting into training and test sets')
@@ -113,8 +116,8 @@ class DatasetHandler:
             flist += sub_jet + dijet
 
         return flist
-        
 
+    @timeit
     def get_train(self):
         """
         Get the entire training set.
@@ -133,6 +136,7 @@ class DatasetHandler:
 
         return self._xyzw(result)
 
+    @timeit
     def get_test(self):
         """
         Get the entire test set.
@@ -151,6 +155,7 @@ class DatasetHandler:
 
         return self._xyzw(result)
 
+    @timeit
     def get_ss(self, nentries=None):
         """
         Get nentries events from spurious signal data.

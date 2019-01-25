@@ -1,6 +1,19 @@
 import os
+import time
 import pickle
 import subprocess as sp
+
+
+def timeit(f):
+
+    def timed(*args, **kwargs):
+        print('-------------')
+        t0 = time.time()
+        ret = f(*args, **kwargs)
+        print('-> Took {:2.2f}s'.format(time.time()-t0))
+        return ret
+
+    return timed
 
 
 def makedir(d):

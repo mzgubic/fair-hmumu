@@ -7,6 +7,7 @@ from fair_hmumu import defs
 from fair_hmumu import plot
 from fair_hmumu import models
 from fair_hmumu import utils
+from fair_hmumu.utils import timeit
 from fair_hmumu.dataset import DatasetHandler
 from fair_hmumu.preprocessing import PCAWhiteningPreprocessor
 from fair_hmumu.environment import TFEnvironment
@@ -109,6 +110,7 @@ class Trainer:
         # classifier training
         self._pretrain_classifier()
 
+    @timeit
     def _pretrain_classifier(self):
 
         print('--- Pretraining for {} steps'.format(self.trn_conf['n_pre']))
@@ -127,6 +129,7 @@ class Trainer:
             self.env.train_step_adv(batch)
             self._assess_losses()
 
+    @timeit
     def _train_benchmarks(self):
 
         print('--- Training the benchmark {} model'.format(self.bcm_conf['type']))
@@ -144,6 +147,7 @@ class Trainer:
         # training set is very unbalanced, fit without the weights
         self.bcm.fit(self._ds['train']['X'], self._ds['train']['Y'].ravel())
 
+    @timeit
     def _predict_benchmarks(self):
 
         print('--- Making benchmark prediction on the test and ss events')
@@ -167,6 +171,7 @@ class Trainer:
             loss = np.mean(- label[tt] * np.log(pred[tt]) - (1-label[tt]) * np.log(1-pred[tt]))
             self._losses[tt]['BCM'] = loss
 
+    @timeit
     def train(self):
 
         print('--- Training for {} steps'.format(self.trn_conf['n_epochs']))
