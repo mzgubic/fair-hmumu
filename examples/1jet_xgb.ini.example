@@ -1,0 +1,16 @@
+[Benchmark]
+num_boost_round = 100000
+eta = 0.05172290311989361
+max_depth = 8
+alpha = 0.3959167077938971
+gamma = 0.01937210341151405
+max_delta_step = 27.31042949483293
+min_child_weight = 2.6725730039632007
+colsample_bytree = 0.9688574977915417
+subsample = 0.7417275532809493
+max_bin = 322
+eval_metric = "['rmse', 'auc', 'logloss']"
+objective = binary:logistic
+booster = gbtree
+grow_policy = lossguide
+tree_method = hist
