@@ -66,7 +66,7 @@ class Trainer:
 
         # data handling
         production = self.trn_conf['production']
-        features = self.bcm_features + self.clf_features
+        features = list(set(self.bcm_features) | set(self.clf_features))
         entrystop = self.trn_conf['entrystop']
         self.dh = dataset.DatasetHandler(production, self.njet, features, entrystop=entrystop, test_frac=0.25, seed=42)
         
