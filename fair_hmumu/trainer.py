@@ -148,7 +148,9 @@ class Trainer:
             self.bcm = XGBClassifier(**bcm_hps)
 
         # training set is very unbalanced, fit without the weights
-        self.bcm.fit(self._ds['train']['X'], self._ds['train']['Y'].ravel())
+        # do not apply preprocessing to the benchmark
+        train = self.dh.get_train(self.bcm_features)
+        self.bcm.fit(train['X'], train['Y'].ravel())
 
     @timeit
     def _predict_benchmarks(self):
@@ -156,14 +158,18 @@ class Trainer:
         print('--- Making benchmark prediction on the test and ss events')
 
         # predict on the test set
-        pred, label, weight = {}, {}, {}
-        pred['ss'] = self.bcm.predict_proba(self._ds['ss']['X'])[:, 1].reshape(-1, 1)
+        ds, pred, label, weight = {}, {}, {}, {}
+        ds['ss'] = self.dh.get_ss(features=self.bcm_features)
+        ds['test'] = self.dh.get_test(features=self.bcm_features)
+        ds['train'] = self.dh.get_train(features=self.bcm_features)
+        pred['ss'] = self.bcm.predict_proba(ds['ss']['X'])[:, 1].reshape(-1, 1)
 
         for tt in self._tt:
 
-            pred[tt] = self.bcm.predict_proba(self._ds[tt]['X'])[:, 1].reshape(-1, 1)
-            label[tt] = self._ds[tt]['Y']
-            weight[tt] = self._ds[tt]['W']
+            # predictions, labels, weights
+            pred[tt] = self.bcm.predict_proba(ds[tt]['X'])[:, 1].reshape(-1, 1)
+            label[tt] = ds[tt]['Y']
+            weight[tt] = ds[tt]['W']
 
             # and store the score
             name = '{}_{}'.format(self.bcm_conf['type'], tt)
