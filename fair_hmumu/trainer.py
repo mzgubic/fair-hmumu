@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import itertools
 import sklearn
 from sklearn.ensemble import GradientBoostingClassifier
 from xgboost import XGBClassifier
@@ -350,24 +351,19 @@ class Trainer:
         # KS test plots
         plot.KS_test(test_setups, self.run_conf, loc('KS_test'), unique_id)
 
-
     def _record_summary(self):
 
         def write_number(number, fname):
             with open(os.path.join(self.loc, fname), 'w') as f:
                 f.write('{:2.4f}\n'.format(number))
 
-        # roc auc
-        write_number(self.clf_score['test'].roc_auc, 'roc_auc_clf.txt')
-        write_number(self.bcm_score['test'].roc_auc, 'roc_auc_bcm.txt')
+        # loop over metrics and test/train combinations
+        metrics = ['roc_auc', 'sig_eff', 'ks_metric']
+        for metric, tt in itertools.product(metrics, self._tt):
 
-        # sig eff at 99% bkg rejection
-        write_number(self.clf_score['test'].sig_eff, 'sig_eff_clf.txt')
-        write_number(self.bcm_score['test'].sig_eff, 'sig_eff_bcm.txt')
-
-        # ks test
-        write_number(self.clf_score['test'].ks_metric, 'ks_metric_clf.txt')
-        write_number(self.bcm_score['test'].ks_metric, 'ks_metric_bcm.txt')
+            # write benchmark and classifier values
+            write_number(self.clf_score[tt][metric], 'metric__clf__{}__{}.txt'.format(tt, metric))
+            write_number(self.bcm_score[tt][metric], 'metric__bcm__{}__{}.txt'.format(tt, metric))
 
     def _gif(self):
 
@@ -404,6 +400,9 @@ class ClassifierScore(utils.Saveable):
         self.clf_hists = clf_hists
         self.mass_hists = mass_hists
         self.ks_metric = 0
+
+    def __getitem__(self, key):
+        return getattr(self, key)
 
     def __str__(self):
 
