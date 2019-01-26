@@ -2,6 +2,7 @@ import os
 import ast
 import itertools
 import configparser
+import pandas as pd
 from fair_hmumu import utils
 
 
@@ -162,5 +163,32 @@ class Configuration:
             run_conf.write()
 
             yield run_conf
+
+def read_results(sweepname):
+
+    # get the location
+    sweep_loc = os.path.join(os.getenv('RUN'), sweepname)
+    points_loc = os.path.join(sweep_loc, 'points')
+
+    # construct the dataframe
+    sweep_conf = Configuration(os.path.join(sweep_loc, 'sweep_conf.ini'))
+    sweep_dict = sweep_conf.as_dict()
+    options = ['{}__{}'.format(section, option) for section in sweep_dict for option in sweep_dict[section]]
+    scores = ['roc_auc_bcm', 'roc_auc_clf']
+    results = pd.DataFrame(columns=options+scores)
+
+    # and fill it up
+    for run in os.listdir(points_loc):
+        run_dict = Configuration(os.path.join(points_loc, run, 'run_conf.ini')).as_dict()
+        point_dict = {'{}__{}'.format(section, option):sweep_dict[section][option] for section in run_dict for option in run_dict[section]}
+        for score in scores:
+            with open(os.path.join(points_loc, run, '{}.txt'.format(score)), 'r') as f:
+                point_dict[score] = float(f.read())
+
+        results = results.append(point_dict, ignore_index=True)
+
+    return results
+
+
 
 
