@@ -141,36 +141,26 @@ class Configuration:
         fixed = self.as_dict('fixed')
         sweep = self.as_dict('sweep')
 
-        # check whether it is indeed a sweep conf
-        is_sweep = bool([1 for section in sweep if not sweep[section] == {}])
+        # make all the combinations
+        sw_sections = [section for section in sweep if not sweep[section] == {}]
+        desc = [(section, option) for section in sw_sections for option in sweep[section]]
+        lists = [sweep[section][option] for section in sw_sections for option in sweep[section]]
 
-        # yield self if not sweep conf
-        if not is_sweep:
-            yield self
+        combinations = list(itertools.product(*lists))
 
-        # yield run confs if sweep conf
-        if is_sweep:
+        # loop over combinations and make run configs
+        for comb in combinations:
 
-            # make all the combinations
-            sw_sections = [section for section in sweep if not sweep[section] == {}]
-            desc = [(section, option) for section in sw_sections for option in sweep[section]]
-            lists = [sweep[section][option] for section in sw_sections for option in sweep[section]]
+            # construct the run conf dictionary
+            par_dict = fixed
+            for (section, option), value in zip(desc, comb):
+                par_dict[section][option] = value
 
-            combinations = list(itertools.product(*lists))
+            # get location and write the run conf
+            loc = self.make_new_runconf_dir()
+            run_conf = Configuration.from_dict(par_dict, os.path.join(loc, 'run_conf.ini'))
+            run_conf.write()
 
-            # loop over combinations and make run configs
-            for comb in combinations:
-
-                # construct the run conf dictionary
-                par_dict = fixed
-                for (section, option), value in zip(desc, comb):
-                    par_dict[section][option] = value
-
-                # get location and write the run conf
-                loc = self.make_new_runconf_dir()
-                run_conf = Configuration.from_dict(par_dict, os.path.join(loc, 'run_conf.ini'))
-                run_conf.write()
-
-                yield run_conf
+            yield run_conf
 
 
