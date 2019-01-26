@@ -5,7 +5,7 @@ mpl.use('agg') # order of magnitude faster than tkagg
 import matplotlib.pyplot as plt
 from fair_hmumu import defs
 
-mpl.rcParams['font.size'] = 15
+mpl.rcParams['font.size'] = 13
 
 
 def losses(losses, run_conf, loc, unique_id):
@@ -318,7 +318,19 @@ def KS_test(plot_setups, run_conf, loc, unique_id):
     print(path)
 
 
+def metric_vs_parameter(metric, parameter, results, loc):
 
+    # plot
+    fig, ax = plt.subplots()
+    ax.scatter(results[parameter], results[metric])
+    ax.set_xlabel(parameter)
+    ax.set_ylabel(metric)
+
+    # save
+    path = os.path.join(loc, '{}_vs_{}.pdf'.format(metric, parameter))
+    plt.savefig(path)
+    plt.close(fig)
+    print(path)
 
 
 

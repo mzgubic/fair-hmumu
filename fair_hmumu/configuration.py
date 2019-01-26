@@ -187,7 +187,7 @@ def read_results(sweepname):
 
         results = results.append(point_dict, ignore_index=True)
 
-    return results
+    return results, options, scores
 
 
 
