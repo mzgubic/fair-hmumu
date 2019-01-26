@@ -1,7 +1,9 @@
 import os
 import argparse
+import itertools
 from fair_hmumu import configuration
 from fair_hmumu import plot
+from fair_hmumu import utils
 
 
 def main():
@@ -16,12 +18,12 @@ def main():
     print('--- Summarising {}'.format(args.sweep))
 
     # read the results as a dataframe
-    results, options, scores = configuration.read_results(args.sweep)
+    results, options, metrics = configuration.read_results(args.sweep)
 
     # plot the results summary
-    loc = os.path.join(os.getenv('RUN'), args.sweep)
-    plot.metric_vs_parameter('roc_auc_bcm', 'Benchmark__eta', results, loc)
-    
+    loc = utils.makedir(os.path.join(os.getenv('RUN'), args.sweep, 'plots'))
+    for metric, option in itertools.product(metrics, options):
+        plot.metric_vs_parameter(metric, option, results, loc)
 
 if __name__ == '__main__':
     main()

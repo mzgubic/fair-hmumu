@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import itertools
 import matplotlib as mpl
 mpl.use('agg') # order of magnitude faster than tkagg
 import matplotlib.pyplot as plt
@@ -320,11 +321,22 @@ def KS_test(plot_setups, run_conf, loc, unique_id):
 
 def metric_vs_parameter(metric, parameter, results, loc):
 
+    # check
+    if type(results[parameter][0]) in [list, tuple]:
+        return None
+
     # plot
     fig, ax = plt.subplots()
-    ax.scatter(results[parameter], results[metric])
+    plt.subplots_adjust(left=0.15)
+    colours = {'clf':defs.blue, 'bcm':defs.dark_blue}
+    markers = {'test':'x', 'train':'.'}
+    for m, tt in itertools.product(['clf', 'bcm'], ['test', 'train']):
+        xs = results[parameter]
+        ys = results['{}__{}__{}'.format(m, tt, metric)]
+        ax.scatter(xs, ys, color=colours[m], marker=markers[tt], label='{} ({})'.format(m, tt))
     ax.set_xlabel(parameter)
     ax.set_ylabel(metric)
+    ax.legend(loc='best', fontsize=10)
 
     # save
     path = os.path.join(loc, '{}_vs_{}.pdf'.format(metric, parameter))

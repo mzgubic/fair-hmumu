@@ -174,20 +174,21 @@ def read_results(sweepname):
     sweep_conf = Configuration(os.path.join(sweep_loc, 'sweep_conf.ini'))
     sweep_dict = sweep_conf.as_dict()
     options = ['{}__{}'.format(section, option) for section in sweep_dict for option in sweep_dict[section]]
-    scores = ['roc_auc_bcm', 'roc_auc_clf']
+    scores = [fname.split('.')[0] for fname in os.listdir(os.path.join(points_loc, 'run0')) if fname.startswith('metric')]
+    metrics = list(set([score.split('__')[-1] for score in scores]))
     results = pd.DataFrame(columns=options+scores)
 
     # and fill it up
     for run in os.listdir(points_loc):
         run_dict = Configuration(os.path.join(points_loc, run, 'run_conf.ini')).as_dict()
-        point_dict = {'{}__{}'.format(section, option):sweep_dict[section][option] for section in run_dict for option in run_dict[section]}
+        point_dict = {'{}__{}'.format(section, option):run_dict[section][option] for section in run_dict for option in run_dict[section]}
         for score in scores:
             with open(os.path.join(points_loc, run, '{}.txt'.format(score)), 'r') as f:
-                point_dict[score] = float(f.read())
+                point_dict[score.replace('metric__', '')] = float(f.read())
 
         results = results.append(point_dict, ignore_index=True)
 
-    return results, options, scores
+    return results, options, metrics
 
 
 
