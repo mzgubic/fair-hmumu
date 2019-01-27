@@ -25,5 +25,10 @@ def main():
     for metric, option in itertools.product(metrics, options):
         plot.metric_vs_parameter(metric, option, results, loc)
 
+    for option in options:
+        plot.metric2d('sig_eff', 'roc_auc', option, results, loc)
+        plot.metric2d('ks_metric', 'roc_auc', option, results, loc)
+        plot.metric2d('ks_metric', 'sig_eff', option, results, loc)
+
 if __name__ == '__main__':
     main()

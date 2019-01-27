@@ -333,11 +333,11 @@ def metric_vs_parameter(metric, parameter, results, loc):
     fig, ax = plt.subplots()
     plt.subplots_adjust(left=0.15)
     colours = {'clf':defs.blue, 'bcm':defs.dark_blue}
-    markers = {'test':'x', 'train':'.'}
+    markers = {'clf':{'test':'X', 'train':'x'}, 'bcm':{'test':'o', 'train':'.'}}
     for m, tt in itertools.product(['clf', 'bcm'], ['test', 'train']):
         xs = results[parameter]
         ys = results['{}__{}__{}'.format(m, tt, metric)]
-        ax.scatter(xs, ys, color=colours[m], marker=markers[tt], label='{} ({})'.format(m, tt))
+        ax.scatter(xs, ys, color=colours[m], marker=markers[m][tt], label='{} ({})'.format(m, tt))
     ax.set_xlabel(parameter)
     ax.set_ylabel(metric)
     ax.legend(loc='best', fontsize=10)
@@ -348,6 +348,44 @@ def metric_vs_parameter(metric, parameter, results, loc):
     plt.close(fig)
     print(path)
 
+
+def metric2d(metric_x, metric_y, parameter, results, loc):
+
+    # check parameter is not something confusing
+    if type(results[parameter][0]) in [list, tuple]:
+        return None
+
+    # check there are different values of the parameter
+    if len(results[parameter].unique()) == 1:
+        return None
+
+    # plot
+    fig, ax = plt.subplots()
+    plt.subplots_adjust(left=0.15)
+    markers = {'clf':{'test':'X', 'train':'x'}, 'bcm':{'test':'o', 'train':'.'}}
+    cm = plt.cm.get_cmap('cool')
+    for m, tt in itertools.product(['clf', 'bcm'], ['test', 'train']):
+        xs = results['{}__{}__{}'.format(m, tt, metric_x)]
+        ys = results['{}__{}__{}'.format(m, tt, metric_y)]
+        zs = results[parameter]
+        sc = ax.scatter(xs, ys, marker=markers[m][tt], label='{} ({})'.format(m, tt), c=zs, cmap=cm)
+    ax.set_xlabel(metric_x)
+    ax.set_ylabel(metric_y)
+    leg = ax.legend(loc='best', fontsize=10)
+    for marker in leg.legendHandles:
+        marker.set_color('k')
+    cbar = plt.colorbar(sc)
+    cbar.set_label(parameter)
+
+    # save
+    path = os.path.join(loc, '{}_{}_vs_{}.pdf'.format(metric_x, metric_y, parameter))
+    plt.savefig(path)
+    plt.close(fig)
+    print(path)
+
+
+
+    
 
 
 
