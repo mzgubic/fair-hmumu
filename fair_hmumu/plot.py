@@ -321,8 +321,12 @@ def KS_test(plot_setups, run_conf, loc, unique_id):
 
 def metric_vs_parameter(metric, parameter, results, loc):
 
-    # check
+    # check parameter is not something confusing
     if type(results[parameter][0]) in [list, tuple]:
+        return None
+
+    # check there are different values of the parameter
+    if len(results[parameter].unique()) == 1:
         return None
 
     # plot
