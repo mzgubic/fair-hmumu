@@ -182,9 +182,16 @@ def read_results(sweepname):
     for run in os.listdir(points_loc):
         run_dict = Configuration(os.path.join(points_loc, run, 'run_conf.ini')).as_dict()
         point_dict = {'{}__{}'.format(section, option):run_dict[section][option] for section in run_dict for option in run_dict[section]}
-        for score in scores:
-            with open(os.path.join(points_loc, run, '{}.txt'.format(score)), 'r') as f:
-                point_dict[score.replace('metric__', '')] = float(f.read())
+
+        # see if the particular run has finished
+        try:
+            for score in scores:
+                with open(os.path.join(points_loc, run, '{}.txt'.format(score)), 'r') as f:
+                    point_dict[score.replace('metric__', '')] = float(f.read())
+
+        # ignore if not
+        except FileNotFoundError:
+            continue
 
         results = results.append(point_dict, ignore_index=True)
 
