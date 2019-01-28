@@ -337,7 +337,9 @@ def metric_vs_parameter(metric, parameter, results, loc):
     for m, tt in itertools.product(['clf', 'bcm'], ['test', 'train']):
         xs = results[parameter]
         ys = results['{}__{}__{}'.format(m, tt, metric)]
-        ax.scatter(xs, ys, color=colours[m], marker=markers[m][tt], label='{} ({})'.format(m, tt))
+        m_labels = {'clf':'DNN', 'bcm':'XGB'}
+        label = '{} ({})'.format(m_labels[m], tt)
+        ax.scatter(xs, ys, color=colours[m], marker=markers[m][tt], label=label)
     ax.set_xlabel(parameter)
     ax.set_ylabel(metric)
     ax.legend(loc='best', fontsize=10)
@@ -368,7 +370,9 @@ def metric2d(metric_x, metric_y, parameter, results, loc):
         xs = results['{}__{}__{}'.format(m, tt, metric_x)]
         ys = results['{}__{}__{}'.format(m, tt, metric_y)]
         zs = results[parameter]
-        sc = ax.scatter(xs, ys, marker=markers[m][tt], label='{} ({})'.format(m, tt), c=zs, cmap=cm)
+        m_labels = {'clf':'DNN', 'bcm':'XGB'}
+        label = '{} ({})'.format(m_labels[m], tt)
+        sc = ax.scatter(xs, ys, marker=markers[m][tt], label=label, c=zs, cmap=cm)
     ax.set_xlabel(metric_x)
     ax.set_ylabel(metric_y)
     leg = ax.legend(loc='best', fontsize=10)
