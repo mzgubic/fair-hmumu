@@ -79,7 +79,7 @@ class DummyAdversary(Adversary):
     def make_loss(self, _, __):
 
         with tf.variable_scope(self.name):
-            dummy_var = tf.Variable(0.1, name='dummy')
+            dummy_var = tf.Variable(0.001, name='dummy')
             self.loss = tf.math.abs(dummy_var) # i.e. goes to zero
 
         self.tf_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name)

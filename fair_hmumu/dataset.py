@@ -98,7 +98,7 @@ class DatasetHandler:
         result = pd.concat([sig, data])
         result = result.sample(frac=1, random_state=self.seed).reset_index(drop=True)
 
-        print('-> {} events'.format(result.shape[0]))
+        print('({} events)'.format(result.shape[0]))
 
         return self._xyzw(result, features)
 
@@ -117,7 +117,7 @@ class DatasetHandler:
         result = pd.concat([sig, data])
         result = result.sample(frac=1, random_state=self.seed).reset_index(drop=True)
 
-        print('-> {} events'.format(result.shape[0]))
+        print('({} events)'.format(result.shape[0]))
 
         return self._xyzw(result, features)
 

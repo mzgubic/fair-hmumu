@@ -62,7 +62,7 @@ def losses(losses, run_conf, loc, unique_id):
     write_conf_info(ax[1], {s:run_conf[s] for s in run_conf if s in ['Adversary', 'Optimiser']}, isloss=True)
     write_conf_info(ax[2], {s:run_conf[s] for s in run_conf if s in ['Training']}, isloss=True)
     ax[-1].set_xlabel('Training step')
-    ax[0].set_ylim(ax[0].get_ylim()[0], 0.75)
+    ax[0].set_ylim(ax[0].get_ylim()[0], 0.80)
 
     # save
     path = os.path.join(loc, 'losses_{}.pdf'.format(unique_id))
