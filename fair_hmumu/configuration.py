@@ -174,7 +174,7 @@ def read_results(sweepname):
     sweep_conf = Configuration(os.path.join(sweep_loc, 'sweep_conf.ini'))
     sweep_dict = sweep_conf.as_dict()
     options = ['{}__{}'.format(section, option) for section in sweep_dict for option in sweep_dict[section]]
-    scores = [fname.split('.')[0] for fname in os.listdir(os.path.join(points_loc, 'run0')) if fname.startswith('metric')]
+    scores = [fname.split('.')[0] for fname in os.listdir(os.path.join(points_loc, 'run0000')) if fname.startswith('metric')]
     metrics = list(set([score.split('__')[-1] for score in scores]))
     results = pd.DataFrame(columns=options+scores)
 
