@@ -1,4 +1,5 @@
 import os
+import time
 import numpy as np
 import itertools
 import sklearn
@@ -187,6 +188,7 @@ class Trainer:
         print('--- Training for {} steps'.format(self.trn_conf['n_epochs']))
 
         n_epochs = self.trn_conf['n_epochs']
+        t0 = time.time()
 
         for istep in range(n_epochs):
 
@@ -210,6 +212,8 @@ class Trainer:
             if is_final_step or istep%self.plt_conf['n_skip'] == 0:
                 self._assess_scores(istep)
                 self._make_plots(istep, is_final_step)
+                t1 = time.time()
+                print('{} steps took {:2.2f}s. Time left to train: {:2.2f}'.format(istep, t1-t0, (n_epochs-istep)*(t1-t0)/(istep+1)))
 
         # write a bash script that can be run to make gifs
         self._gif()

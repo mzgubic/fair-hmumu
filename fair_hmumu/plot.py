@@ -23,7 +23,7 @@ def losses(losses, run_conf, loc, unique_id):
     def get_label(tt, ltype):
         labels = {'C':'Classifier',
                   'A':'Adversary',
-                  'CA':r'Clf. + $ \lambda \times$ Adv.',
+                  'CA':r'Clf. - $ \lambda \times$ Adv.',
                   'BCM':'Benchmark'.format(tt)}
         return '{} ({})'.format(labels[ltype], tt)
 
