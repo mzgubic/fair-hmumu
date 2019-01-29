@@ -125,7 +125,7 @@ class Configuration:
         for i in itertools.count():
 
             # does this run dir already exist?
-            trial_path = os.path.join(self.loc, 'points', 'run{}'.format(i))
+            trial_path = os.path.join(self.loc, 'points', 'run{:04d}'.format(i))
 
             # try next one if it exists, otherwise return the path
             if os.path.exists(trial_path):

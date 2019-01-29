@@ -37,7 +37,8 @@ def main():
 
         # run the command (submit)
         if args.batch:
-            path = os.path.join(os.path.split(run_conf.path)[0], 'training.sh')
+            run_nb = p.split('/')[-2]
+            path = os.path.join(os.path.split(run_conf.path)[0], '{}.sh'.format(run_nb))
             print(path)
             utils.write_job(command, path)
             utils.send_job(path)
