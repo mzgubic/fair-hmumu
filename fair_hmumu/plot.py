@@ -340,6 +340,11 @@ def metric_vs_parameter(metric, parameter, results, loc):
         m_labels = {'clf':'DNN', 'bcm':'XGB'}
         label = '{} ({})'.format(m_labels[m], tt)
         ax.scatter(xs, ys, color=colours[m], marker=markers[m][tt], label=label)
+
+    # final touches
+    if max(xs)/min(xs) > 100:
+        ax.set_xscale('log')
+        ax.set_xlim(0.8*min(xs), max(xs)*1.2)
     ax.set_xlabel(parameter)
     ax.set_ylabel(metric)
     ax.legend(loc='best', fontsize=10)
