@@ -58,13 +58,14 @@ def send_job(job_path):
     condor_submit = os.path.splitext(job_path)[0] + ".submit"
 
     with open(condor_submit, 'w') as f:
-        f.write('executable    = {}\n'.format(job_path))
-        f.write('arguments     = $(ClusterID)\n')
-        f.write('output        = {}/$(ClusterId).out\n'.format(job_dir))
-        f.write('error         = {}/$(ClusterId).err\n'.format(job_dir))
-        f.write('log           = {}/$(ClusterId).log\n'.format(job_dir))
-        f.write('stream_output = True\n')
-        f.write('stream_error  = True\n')
+        f.write('executable     = {}\n'.format(job_path))
+        f.write('arguments      = $(ClusterID)\n')
+        f.write('output         = {}/$(ClusterId).out\n'.format(job_dir))
+        f.write('error          = {}/$(ClusterId).err\n'.format(job_dir))
+        f.write('log            = {}/$(ClusterId).log\n'.format(job_dir))
+        f.write('request_memory = 10 GB\n')
+        f.write('stream_output  = True\n')
+        f.write('stream_error   = True\n')
         f.write('queue\n')
 
     # call the job submitter
