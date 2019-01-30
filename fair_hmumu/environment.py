@@ -40,10 +40,11 @@ class TFEnvironment(Saveable):
         self.CA_loss = self.clf.loss - self.opt_conf['lambda'] * self.adv.loss
 
         # optimisers
-        adam_hps = {key:self.opt_conf[key] for key in self.opt_conf if key not in ['lambda']}
-        self.opt_C = tf.train.AdamOptimizer(**adam_hps).minimize(self.clf.loss, var_list=self.clf.tf_vars)
-        self.opt_A = tf.train.AdamOptimizer(**adam_hps).minimize(self.adv.loss, var_list=self.adv.tf_vars)
-        self.opt_CA = tf.train.AdamOptimizer(**adam_hps).minimize(self.CA_loss, var_list=self.clf.tf_vars)
+        opt = getattr(tf.train, self.opt_conf['type']) # choose the optimizer, for example tf.train.AdamOptimizer
+        opt_hps = {key:self.opt_conf[key] for key in self.opt_conf if key not in ['lambda', 'type']}
+        self.opt_C = opt(**opt_hps).minimize(self.clf.loss, var_list=self.clf.tf_vars)
+        self.opt_A = opt(**opt_hps).minimize(self.adv.loss, var_list=self.adv.tf_vars)
+        self.opt_CA = opt(**opt_hps).minimize(self.CA_loss, var_list=self.clf.tf_vars)
 
     def initialise_variables(self):
 
