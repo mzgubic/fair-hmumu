@@ -54,7 +54,7 @@ class Trainer:
 
         # prepare metrics
         self.metrics = ['roc_auc', 'sig_eff', 'ks_metric']
-        self._metric_vals = {tt:{met:[] for met in self.metrics} for tt in self._tt}
+        self._metric_vals = {met:{tt:[] for tt in self._tt} for met in self.metrics}
 
         # prepare classifier scores
         self.bcm = None
@@ -236,7 +236,7 @@ class Trainer:
 
         for tt, metric in itertools.product(self._tt, self.metrics):
             try:
-                self._metric_vals[tt][metric].append(self.clf_score[tt][metric])
+                self._metric_vals[metric][tt].append(self.clf_score[tt][metric])
             except KeyError:
                 pass
 
@@ -352,6 +352,9 @@ class Trainer:
 
         # loss plot
         plot.losses(self._losses, self.run_conf, loc('losses'), unique_id)
+
+        # metric plot
+        plot.metrics(self._metric_vals, self.bcm_score, self.run_conf, loc('metric'), unique_id)
 
         # roc plot
         plot.roc_curve(all_setups, self.run_conf, loc('roc_curve'), unique_id, zoom=True)

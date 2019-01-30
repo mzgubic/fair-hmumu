@@ -70,6 +70,58 @@ def losses(losses, run_conf, loc, unique_id):
     plt.close(fig)
     print(path)
 
+def metrics(metric_vals, bcm_score, run_conf, loc, unique_id):
+
+    # get data
+    run_conf = run_conf.as_dict()
+    metrics = sorted(list(metric_vals.keys()))
+    n_metrics = len(metrics)
+
+    # plot
+    fig, ax = plt.subplots(n_metrics, 1, figsize=(7, 7), sharex=True)
+    plt.subplots_adjust(left=0.15)
+    fig.suptitle('Metrics')
+
+    # helpers
+    lstyles = {'test':'-', 'train':':'}
+
+    # plot values
+    for i, metric in enumerate(metric_vals):
+
+        # add classifier info
+        for tt in metric_vals[metric]:
+            
+            # dont bother making an empty plot
+            vals = metric_vals[metric][tt]
+            if len(vals) == 0:
+                return
+
+            # add curves to the plot
+            ax[i].plot(range(len(vals)), vals, c=defs.blue, linestyle=lstyles[tt], label='DNN ({})'.format(tt))
+
+        # two loops for order in the legend
+        for tt in metric_vals[metric]:
+            bcm_val = bcm_score[tt][metric]
+            ax[i].plot([0, len(vals)], [bcm_val, bcm_val], c=defs.dark_blue, linestyle=lstyles[tt], label='XGB ({})'.format(tt))
+
+        # each subplot once
+        ax[i].set_xlim(0, run_conf['Training']['n_epochs'])
+        ax[i].set_ylabel(metric)
+        ax[i].set_xscale('log')
+        ax[i].legend(loc='lower right', fontsize=10)
+
+    # cosmetics
+    write_conf_info(ax[0], {s:run_conf[s] for s in run_conf if s in ['Classifier', 'Benchmark']}, isloss=True)
+    write_conf_info(ax[1], {s:run_conf[s] for s in run_conf if s in ['Adversary', 'Optimiser']}, isloss=True)
+    write_conf_info(ax[2], {s:run_conf[s] for s in run_conf if s in ['Training']}, isloss=True)
+    ax[-1].set_xlabel('Training step')
+
+    # save
+    path = os.path.join(loc, 'metric_{}.pdf'.format(unique_id))
+    plt.savefig(path)
+    plt.close(fig)
+    print(path)
+
 def gy(y1, dy):
     for i in range(1000):
         yield y1 - i*dy
