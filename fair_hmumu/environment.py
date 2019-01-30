@@ -42,7 +42,9 @@ class TFEnvironment(Saveable):
 
         # optimisers
         opt = getattr(tf.train, self.opt_conf['type']) # choose the optimizer, for example tf.train.AdamOptimizer
-        opt_hps = {key:self.opt_conf[key] for key in self.opt_conf if key not in ['lambda', 'type']}
+        opt_args = list(opt.__init__.__code__.co_varnames)
+        opt_hps = {key:self.opt_conf[key] for key in self.opt_conf if key in opt_args}
+
         self.opt_C = opt(**opt_hps).minimize(self.clf.loss, var_list=self.clf.tf_vars)
         self.opt_A = opt(**opt_hps).minimize(self.adv.loss, var_list=self.adv.tf_vars)
         self.opt_CA = opt(**opt_hps).minimize(self.CA_loss, var_list=self.clf.tf_vars)
