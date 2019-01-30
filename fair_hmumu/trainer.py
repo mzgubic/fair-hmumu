@@ -52,6 +52,10 @@ class Trainer:
         # prepare losses
         self._losses = {tt:{n:[] for n in ['C', 'A', 'CA', 'BCM']} for tt in self._tt}
 
+        # prepare metrics
+        self.metrics = ['roc_auc', 'sig_eff', 'ks_metric']
+        self._metric_vals = {tt:{met:[] for met in self.metrics} for tt in self._tt}
+
         # prepare classifier scores
         self.bcm = None
         self.bcm_score = {}
@@ -125,14 +129,14 @@ class Trainer:
             batch = self.dh.get_batch(self.clf_features)
             batch = self.transform(batch)
             self.env.pretrain_step(batch)
-            self._assess_losses()
+            self._track_losses()
 
         # pretrain the adversary
         for _ in range(self.trn_conf['n_pre']):
             batch = self.dh.get_batch(self.clf_features)
             batch = self.transform(batch)
             self.env.train_step_adv(batch)
-            self._assess_losses()
+            self._track_losses()
 
     @timeit
     def _train_benchmarks(self):
@@ -204,8 +208,9 @@ class Trainer:
                 batch = self.transform(batch)
                 self.env.train_step_adv(batch)
 
-            # track losses (cheap)
-            self._assess_losses()
+            # track losses (cheap) and metrics (expensive, skip n_skip)
+            self._track_losses()
+            self._track_metrics()
 
             # make plots
             is_final_step = (istep == n_epochs-1)
@@ -219,13 +224,21 @@ class Trainer:
         self._gif()
         self._record_summary()
 
-    def _assess_losses(self):
+    def _track_losses(self):
 
         for tt in self._tt:
             C, A, CA = self.env.losses(self._ds[tt])
             self._losses[tt]['C'].append(C)
             self._losses[tt]['A'].append(A)
             self._losses[tt]['CA'].append(CA)
+
+    def _track_metrics(self):
+
+        for tt, metric in itertools.product(self._tt, self.metrics):
+            try:
+                self._metric_vals[tt][metric].append(self.clf_score[tt][metric])
+            except KeyError:
+                pass
 
     def _assess_scores(self, istep):
 
@@ -362,8 +375,7 @@ class Trainer:
                 f.write('{:2.4f}\n'.format(number))
 
         # loop over metrics and test/train combinations
-        metrics = ['roc_auc', 'sig_eff', 'ks_metric']
-        for metric, tt in itertools.product(metrics, self._tt):
+        for metric, tt in itertools.product(self.metrics, self._tt):
 
             # write benchmark and classifier values
             write_number(self.clf_score[tt][metric], 'metric__clf__{}__{}.txt'.format(tt, metric))
