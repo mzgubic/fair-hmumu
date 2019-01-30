@@ -40,14 +40,26 @@ class TFEnvironment(Saveable):
         # combined loss
         self.CA_loss = self.clf.loss - self.opt_conf['lambda'] * self.adv.loss
 
-        # optimisers
+        # optimiser arguments
         opt = getattr(tf.train, self.opt_conf['type']) # choose the optimizer, for example tf.train.AdamOptimizer
         opt_args = list(opt.__init__.__code__.co_varnames)
         opt_hps = {key:self.opt_conf[key] for key in self.opt_conf if key in opt_args}
 
-        self.opt_C = opt(**opt_hps).minimize(self.clf.loss, var_list=self.clf.tf_vars)
+        # learning rate decay
+        global_step = tf.Variable(0, name='global_step', trainable=False)
+        try:
+            lr = tf.train.exponential_decay(self.opt_conf['learning_rate'],
+                                            global_step=global_step,
+                                            decay_steps=self.opt_conf['decay_steps'],
+                                            decay_rate=self.opt_conf['decay_rate'])
+            opt_hps['learning_rate'] = lr
+        except KeyError:
+            pass
+
+        # make optimisers
+        self.opt_C = opt(**opt_hps).minimize(self.clf.loss, var_list=self.clf.tf_vars, global_step=global_step)
         self.opt_A = opt(**opt_hps).minimize(self.adv.loss, var_list=self.adv.tf_vars)
-        self.opt_CA = opt(**opt_hps).minimize(self.CA_loss, var_list=self.clf.tf_vars)
+        self.opt_CA = opt(**opt_hps).minimize(self.CA_loss, var_list=self.clf.tf_vars, global_step=global_step)
 
     def initialise_variables(self):
 
