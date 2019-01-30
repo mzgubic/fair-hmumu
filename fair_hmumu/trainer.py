@@ -213,7 +213,7 @@ class Trainer:
                 self._assess_scores(istep)
                 self._make_plots(istep, is_final_step)
                 t1 = time.time()
-                print('{} steps took {:2.2f}s. Time left to train: {:2.2f}'.format(istep, t1-t0, (n_epochs-istep)*(t1-t0)/(istep+0.01)))
+                print('{} steps took {:2.2f}s. Time left to train: {:2.2f}min'.format(istep, t1-t0, (n_epochs-istep)*(t1-t0)/(istep+0.01)/60.))
 
         # write a bash script that can be run to make gifs
         self._gif()
