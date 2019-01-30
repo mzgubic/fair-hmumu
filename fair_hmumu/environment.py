@@ -1,5 +1,6 @@
 import tensorflow as tf
 from fair_hmumu import defs
+from fair_hmumu import models
 from fair_hmumu.utils import Saveable
 
 class TFEnvironment(Saveable):
@@ -59,10 +60,20 @@ class TFEnvironment(Saveable):
 
     def train_step_clf(self, batch):
 
+        # only use classifier loss of there is no adversary
+        if isinstance(self.adv, models.DummyAdversary):
+            opt = self.opt_C
+        else:
+            opt = self.opt_CA
+        
         feed_dict = {self._in[xyzw]:batch[xyzw] for xyzw in defs.XYZW}
         self.sess.run(self.opt_CA, feed_dict=feed_dict)
 
     def train_step_adv(self, batch):
+
+        # do not run if dummy adversary
+        if isinstance(self.adv, models.DummyAdversary):
+            return None
 
         feed_dict = {self._in[xyzw]:batch[xyzw] for xyzw in defs.XYZW}
         self.sess.run(self.opt_A, feed_dict=feed_dict)
