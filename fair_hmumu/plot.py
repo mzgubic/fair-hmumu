@@ -388,6 +388,8 @@ def metric_vs_parameter(metric, parameter, results, loc):
     markers = {'clf':{'test':'X', 'train':'x'}, 'bcm':{'test':'o', 'train':'.'}}
     alphas = {'test':1, 'train':0.2}
     for m, tt in itertools.product(['clf', 'bcm'], ['test', 'train']):
+        if m == 'bcm' and tt == 'train':
+            continue
         xs = results[parameter]
         ys = results['{}__{}__{}'.format(m, tt, metric)]
         m_labels = {'clf':'DNN', 'bcm':'XGB'}
@@ -426,6 +428,8 @@ def metric2d(metric_x, metric_y, parameter, results, loc):
     alphas = {'test':1, 'train':0.2}
     cm = plt.cm.get_cmap('cool')
     for m, tt in itertools.product(['clf', 'bcm'], ['train', 'test']):
+        if m == 'bcm' and tt == 'train':
+            continue
         xs = results['{}__{}__{}'.format(m, tt, metric_x)]
         ys = results['{}__{}__{}'.format(m, tt, metric_y)]
         zs = results[parameter]
