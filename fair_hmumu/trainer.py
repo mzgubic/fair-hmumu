@@ -406,6 +406,11 @@ class Trainer:
                 # rm pngs to save disk space
                 f.write('rm {}/*.png\n\n'.format(gif))
 
+    def save_model(self):
+        
+        path = os.path.join(self.loc, 'classifier.ckpt')
+        self.env.save_model(path)
+
 
 class ClassifierScore(utils.Saveable):
 

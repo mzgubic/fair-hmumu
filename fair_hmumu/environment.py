@@ -102,6 +102,13 @@ class TFEnvironment(Saveable):
         feed_dict = {self._in[xyzw]:data[xyzw] for xyzw in defs.XYZW}
         return self.sess.run(self.clf.proba, feed_dict=feed_dict)
 
+    def save_model(self, path):
+
+        print('--- Saving the classifier')
+        saver = tf.train.Saver(self.clf.tf_vars)
+        saver.save(self.sess, path)
+        print(path)
+
 
 
 

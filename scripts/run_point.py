@@ -28,6 +28,9 @@ def main():
     # training
     trainer.train()
 
+    # save
+    trainer.save_model()
+
 
 if __name__ == '__main__':
     main()
