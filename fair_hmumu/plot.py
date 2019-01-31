@@ -105,7 +105,7 @@ def metrics(metric_vals, bcm_score, run_conf, loc, unique_id):
             ax[i].plot([0, len(vals)], [bcm_val, bcm_val], c=defs.dark_blue, linestyle=lstyles[tt], label='XGB ({})'.format(tt))
 
         # each subplot once
-        ax[i].set_xlim(0, run_conf['Training']['n_epochs'])
+        ax[i].set_xlim(1, run_conf['Training']['n_epochs'])
         ax[i].set_ylabel(metric)
         ax[i].set_xscale('log')
         ax[i].legend(loc='lower right', fontsize=10)
