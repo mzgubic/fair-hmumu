@@ -15,7 +15,7 @@ from fair_hmumu.preprocessing import PCAWhiteningPreprocessor
 from fair_hmumu.environment import TFEnvironment
 
 
-class Trainer:
+class Master:
 
     def __init__(self, run_conf):
 
@@ -62,12 +62,6 @@ class Trainer:
         self.clf_score = {}
         self.score_loc = utils.makedir(os.path.join(self.loc, 'clf_scores'.format(self.clf.name)))
 
-        # data preprocessing
-        self._fit_preprocessing()
-
-        # set up TensorFlow environment
-        self._setup_environment()
-
     def _load_data(self):
 
         # data handling
@@ -95,6 +89,18 @@ class Trainer:
             for tts in self._tts:
                 self._ds[tts][xz] = self.pre[xz].transform(self._ds[tts][xz])
 
+    def _load_preprocessing(self):
+
+        self.pre = {}
+        for xz in ['X', 'Z']:
+
+            # fit the data preprocessing for the features and the mass
+            self.pre[xz] = PCAWhiteningPreprocessor.from_file(os.path.join(self.loc, 'PCA_{}.pkl'.format(xz)))
+
+            # apply it to the datasets
+            for tts in self._tts:
+                self._ds[tts][xz] = self.pre[xz].transform(self._ds[tts][xz])
+
     def _setup_environment(self):
 
         # set up the tensorflow environment in which the graphs are built and executed
@@ -109,6 +115,20 @@ class Trainer:
             batch[xz] = self.pre[xz].transform(batch[xz])
 
         return batch
+
+
+class Trainer(Master):
+
+    def __init__(self, run_conf):
+
+        # convenience
+        super().__init__(run_conf)
+
+        # data preprocessing
+        self._fit_preprocessing()
+
+        # set up TensorFlow environment
+        self._setup_environment()
 
     def pretrain(self):
 
@@ -410,6 +430,23 @@ class Trainer:
         
         path = os.path.join(self.loc, 'classifier.ckpt')
         self.env.save_model(path)
+
+
+class Predictor(Master):
+
+    def __init__(self, run_conf):
+
+        # convenience
+        super().__init__(run_conf)
+
+        # data preprocessing
+        self._load_preprocessing()
+
+        # set up TensorFlow environment
+        self._setup_environment()
+
+    def predict(self):
+        pass
 
 
 class ClassifierScore(utils.Saveable):
