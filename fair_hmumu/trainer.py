@@ -445,6 +445,11 @@ class Predictor(Master):
         # set up TensorFlow environment
         self._setup_environment()
 
+    def load_model(self):
+
+        path = os.path.join(self.loc, 'classifier.ckpt')
+        self.env.load_model(path)
+
     def predict(self):
         pass
 

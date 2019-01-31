@@ -20,6 +20,7 @@ def main():
     predictor = fair_hmumu.trainer.Predictor(run_conf)
 
     # load the tf model
+    predictor.load_model()
 
     # predict on some data
 

@@ -109,6 +109,12 @@ class TFEnvironment(Saveable):
         saver.save(self.sess, path)
         print(path)
 
+    def load_model(self, path):
+
+        print('--- Loading the classifier from {}'.format(path))
+        saver = tf.train.Saver(self.clf.tf_vars)
+        saver.restore(self.sess, path)
+
 
 
 
