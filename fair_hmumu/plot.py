@@ -397,9 +397,12 @@ def metric_vs_parameter(metric, parameter, results, loc):
         ax.scatter(xs, ys, color=colours[m], marker=markers[m][tt], alpha=alphas[tt], label=label)
 
     # final touches
-    if max(xs)/min(xs) > 100:
-        ax.set_xscale('log')
-        ax.set_xlim(0.8*min(xs), max(xs)*1.2)
+    try:
+        if max(xs)/min(xs) > 100:
+            ax.set_xscale('log')
+            ax.set_xlim(0.8*min(xs), max(xs)*1.2)
+    except TypeError: # if string
+        pass
     ax.set_xlabel(parameter)
     ax.set_ylabel(metric)
     ax.legend(loc='best', fontsize=10)
@@ -421,12 +424,14 @@ def metric2d(metric_x, metric_y, parameter, results, loc):
     if len(results[parameter].unique()) == 1:
         return None
 
+    # check whether parameter is a string or a number
+    is_string = isinstance(results[parameter][0], str)
+
     # plot
     fig, ax = plt.subplots()
     plt.subplots_adjust(left=0.15)
     markers = {'clf':{'test':'X', 'train':'x'}, 'bcm':{'test':'o', 'train':'.'}}
     alphas = {'test':1, 'train':0.2}
-    cm = plt.cm.get_cmap('cool')
     for m, tt in itertools.product(['clf', 'bcm'], ['train', 'test']):
         if m == 'bcm' and tt == 'train':
             continue
@@ -435,14 +440,28 @@ def metric2d(metric_x, metric_y, parameter, results, loc):
         zs = results[parameter]
         m_labels = {'clf':'DNN', 'bcm':'XGB'}
         label = '{} ({})'.format(m_labels[m], tt)
-        sc = ax.scatter(xs, ys, marker=markers[m][tt], label=label, c=zs, cmap=cm, alpha=alphas[tt])
+        if is_string:
+            digits_map = {par:i for i, par in enumerate(zs.unique())}
+            digits = [digits_map[par] for par in zs]
+            cm = plt.cm.get_cmap('cool', len(zs.unique()))
+            sc = ax.scatter(xs, ys, marker=markers[m][tt], label=label, c=digits, cmap=cm, alpha=alphas[tt], vmin=-0.5, vmax=len(digits_map)-0.5)
+        else:
+            cm = plt.cm.get_cmap('cool')
+            sc = ax.scatter(xs, ys, marker=markers[m][tt], label=label, c=zs, cmap=cm, alpha=alphas[tt])
+
     ax.set_xlabel(metric_x)
     ax.set_ylabel(metric_y)
     leg = ax.legend(loc='best', fontsize=10)
     for marker in leg.legendHandles:
         marker.set_color('k')
-    cbar = plt.colorbar(sc)
-    cbar.set_label(parameter)
+    if is_string:
+        cbar = plt.colorbar(sc)
+        cbar.set_ticks(range(len(zs.unique())))
+        cbar.set_ticklabels(zs.unique())
+        cbar.set_label(parameter)
+    else:
+        cbar = plt.colorbar(sc)
+        cbar.set_label(parameter)
 
     # save
     path = os.path.join(loc, '{}_{}_vs_{}.pdf'.format(metric_x, metric_y, parameter))
