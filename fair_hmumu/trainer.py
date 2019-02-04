@@ -62,7 +62,7 @@ class Master:
         self.bcm_score = {}
         self.clf_score = {}
         self.score_loc = utils.makedir(os.path.join(self.loc, 'clf_scores'.format(self.clf.name)))
-
+        
     def _load_data(self):
 
         # data handling
@@ -400,7 +400,11 @@ class Trainer(Master):
         # train on the spurious signal events as they are the most abundant
         self.out_tsf = OutputTransformer(n_quantiles=1000, output_distribution='uniform')
         self.out_tsf.fit(predictions)
-        self.out_tsf.save(os.path.join(self.loc, 'QuantileTransform_quot2_rmnd01.pkl'))
+
+        # save the transformer
+        n_div = self.trn_conf['n_div']
+        n_rmd = self.trn_conf['n_rmd']
+        self.out_tsf.save(os.path.join(self.loc, 'QuantileTransform.pkl'))
 
     def _record_summary(self):
 
@@ -439,7 +443,9 @@ class Trainer(Master):
 
     def save_model(self):
         
-        path = os.path.join(self.loc, 'classifier.ckpt')
+        n_div = self.trn_conf['n_div']
+        n_rmd = self.trn_conf['n_rmd']
+        path = os.path.join(self.loc, 'Classifier.pkl')
         self.env.save_model(path)
 
 
@@ -459,7 +465,9 @@ class Predictor(Master):
     def load_model(self):
 
         # load model
-        path = os.path.join(self.loc, 'classifier.ckpt')
+        n_div = self.trn_conf['n_div']
+        n_rmd = self.trn_conf['n_rmd']
+        path = os.path.join(self.loc, 'Classifier.pkl')
         self.env.load_model(path)
         
         # and the output transform
@@ -468,7 +476,7 @@ class Predictor(Master):
     def _load_output_transform(self):
 
         # train on the spurious signal events as they are the most abundant
-        path = os.path.join(self.loc, 'QuantileTransform_quot2_rmnd01.pkl')
+        path = os.path.join(self.loc, 'QuantileTransform.pkl')
         self.out_tsf = OutputTransformer.from_file(path)
 
     def predict(self, data):
