@@ -106,10 +106,10 @@ class Master:
 
         # set up the tensorflow environment in which the graphs are built and executed
         self.env = TFEnvironment(self.clf, self.adv, self.opt_conf)
-        self.env.build(self.transform(self.dh.get_batch(self.clf_features)))
+        self.env.build(self.preprocess(self.dh.get_batch(self.clf_features)))
         self.env.initialise_variables()
 
-    def transform(self, batch):
+    def preprocess(self, batch):
 
         # transform X and Z
         for xz in ['X', 'Z']:
@@ -148,14 +148,14 @@ class Trainer(Master):
         # pretrain the classifier
         for _ in range(self.trn_conf['n_pre']):
             batch = self.dh.get_batch(self.clf_features)
-            batch = self.transform(batch)
+            batch = self.preprocess(batch)
             self.env.pretrain_step(batch)
             self._track_losses()
 
         # pretrain the adversary
         for _ in range(self.trn_conf['n_pre']):
             batch = self.dh.get_batch(self.clf_features)
-            batch = self.transform(batch)
+            batch = self.preprocess(batch)
             self.env.train_step_adv(batch)
             self._track_losses()
 
@@ -220,13 +220,13 @@ class Trainer(Master):
             # train the classifier
             for _ in range(self.trn_conf['n_clf']):
                 batch = self.dh.get_batch(self.clf_features)
-                batch = self.transform(batch)
+                batch = self.preprocess(batch)
                 self.env.train_step_clf(batch)
 
             # train the adversary
             for _ in range(self.trn_conf['n_adv']):
                 batch = self.dh.get_batch(self.clf_features)
-                batch = self.transform(batch)
+                batch = self.preprocess(batch)
                 self.env.train_step_adv(batch)
 
             # track losses (cheap) and metrics (expensive, skip n_skip)
