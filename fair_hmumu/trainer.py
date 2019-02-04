@@ -461,11 +461,28 @@ class Predictor(Master):
 
     def load_model(self):
 
+        # load model
         path = os.path.join(self.loc, 'classifier.ckpt')
         self.env.load_model(path)
+        
+        # and the output transform
+        self._load_output_transform()
 
-    def predict(self):
-        pass
+    def _load_output_transform(self):
+
+        # train on the spurious signal events as they are the most abundant
+        path = os.path.join(self.loc, 'QuantileTransform_quot2_rmnd01.pkl')
+        self.out_tsf = OutputTransformer.from_file(path)
+
+    def predict(self, data):
+
+        # predict using the model
+        pred = self.env.clf_predict(data)
+
+        # transform the output
+        output = self.out_tsf(pred)
+
+        return output
 
 
 class ClassifierScore(utils.Saveable):

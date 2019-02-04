@@ -104,14 +104,13 @@ class TFEnvironment(Saveable):
 
     def save_model(self, path):
 
-        print('--- Saving the classifier')
+        print('--- Saving the classifier as {}'.format(path))
         saver = tf.train.Saver(self.clf.tf_vars)
         saver.save(self.sess, path)
-        print(path)
 
     def load_model(self, path):
 
-        print('--- Loading the classifier from {}'.format(path))
+        print('--- Restoring the classifier from {}'.format(path))
         saver = tf.train.Saver(self.clf.tf_vars)
         saver.restore(self.sess, path)
 
