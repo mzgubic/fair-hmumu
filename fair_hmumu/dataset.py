@@ -9,7 +9,7 @@ from fair_hmumu.utils import timeit
 
 class DatasetHandler:
 
-    def __init__(self, production, njet, features, entrystop=1000, test_frac=0.25, seed=42):
+    def __init__(self, trn_conf, seed=42):
         """
         Dataset handler. Split in training and test sets, get training batches.
 
@@ -19,15 +19,20 @@ class DatasetHandler:
             entrystop (int or None): Maximum number of read rows. None reads all.
         """
 
-        # settings
-        self.production = production
-        self.njet = njet
-        self.loc = os.path.join(os.getenv('DATA'), production)
-        self.features = features
-        self.branches = self.features + [defs.target, defs.mass, defs.weight]
-        self.entrystop = entrystop
+        # general settings
+        self.production = trn_conf['production']
+        self.loc = os.path.join(os.getenv('DATA'), self.production)
+        self.njet = trn_conf['njet']
+        self.entrystop = trn_conf['entrystop']
+        self.n_div = trn_conf['n_div']
+        self.n_rmd = trn_conf['n_rmd']
         self.seed = seed
-        self.test_frac = test_frac
+
+        # features
+        self.bcm_features = feature_list(trn_conf['bcm_features'], self.njet)
+        self.clf_features = feature_list(trn_conf['clf_features'], self.njet)
+        self.features = list(set(self.bcm_features) | set(self.clf_features))
+        self.branches = self.features + [defs.target, defs.mass, defs.weight, defs.event_number]
 
         # set up
         print('--- Selecting features for {} channel'.format(self.njet))

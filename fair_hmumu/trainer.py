@@ -66,10 +66,7 @@ class Master:
     def _load_data(self):
 
         # data handling
-        production = self.trn_conf['production']
-        features = list(set(self.bcm_features) | set(self.clf_features))
-        entrystop = self.trn_conf['entrystop']
-        self.dh = dataset.DatasetHandler(production, self.njet, features, entrystop=entrystop, test_frac=0.25, seed=42)
+        self.dh = dataset.DatasetHandler(self.trn_conf, seed=42)
         
         # load
         self._ds['train'] = self.dh.get_train(self.clf_features)
