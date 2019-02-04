@@ -12,6 +12,7 @@ from fair_hmumu import utils
 from fair_hmumu import dataset
 from fair_hmumu.utils import timeit
 from fair_hmumu.preprocessing import PCAWhiteningPreprocessor
+from fair_hmumu.preprocessing import OutputTransformer
 from fair_hmumu.environment import TFEnvironment
 
 
@@ -240,6 +241,9 @@ class Trainer(Master):
                 t1 = time.time()
                 print('{} steps took {:2.2f}s. Time left to train: {:2.2f}min'.format(istep, t1-t0, (n_epochs-istep)*(t1-t0)/(istep+0.01)/60.))
 
+        # transform the output to a uniform distribution
+        self._train_output_transform()
+
         # write a bash script that can be run to make gifs
         self._gif()
         self._record_summary()
@@ -390,6 +394,16 @@ class Trainer(Master):
 
         # KS test plots
         plot.KS_test(test_setups, self.run_conf, loc('KS_test'), unique_id)
+
+    def _train_output_transform(self):
+
+        # transform prediction to a uniform distribution
+        predictions = self.env.clf_predict(self._ds['ss'])
+
+        # train on the spurious signal events as they are the most abundant
+        self.out_tsf = OutputTransformer(n_quantiles=1000, output_distribution='uniform')
+        self.out_tsf.fit(predictions)
+        self.out_tsf.save(os.path.join(self.loc, 'QuantileTransform_quot2_rmnd01.pkl'))
 
     def _record_summary(self):
 
