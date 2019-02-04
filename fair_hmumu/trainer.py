@@ -300,6 +300,11 @@ class Trainer(Master):
         # WARNING: need to have monotonically increasing inputs to np.interp, otherwise results are rubbish
         sig_eff = np.interp(1-0.99, fprs, tprs)
 
+        # compress the roc curve to N points (not a million)
+        keep = list(np.linspace(0, len(fprs)-1, 1000, dtype=int))
+        fprs = fprs[keep]
+        tprs = tprs[keep]
+
         return fprs, tprs, roc_auc, sig_eff
 
     def _get_clf_hists(self, ss_pred):
