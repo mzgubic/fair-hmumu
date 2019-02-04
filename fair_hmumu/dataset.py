@@ -53,12 +53,19 @@ class DatasetHandler:
             fname = '{}/{}.root'.format(self.loc, dataset)
             tree = ur.open(fname)[self.njet]
 
-            # get the array
+            # get the arrayand convert it to a dataframe
             arrays = tree.arrays(branches=self.branches, entrystop=self.entrystop)
+            df = pd.DataFrame(arrays)
 
-            # convert it to a DataFrame and decode column names to strings
-            self.df[dataset]['full'] = pd.DataFrame(arrays)
-            self.df[dataset]['full'].columns = [feature.decode('utf-8') for feature in self.df[dataset]['full'].columns]
+            # decode column names to strings
+            df.columns = [feature.decode('utf-8') for feature in df.columns]
+
+            # and cast uint to int
+            df[defs.event_number] = df[defs.event_number].astype(int)
+
+            # finally save as an attribute
+            self.df[dataset]['full'] = df
+
 
     @timeit
     def _split(self):
@@ -67,13 +74,11 @@ class DatasetHandler:
 
         for dataset in defs.datasets:
 
-            # get the training and test set indices
-            nentries = self.df[dataset]['full'].shape[0]
-            indices = np.arange(nentries)
-            np.random.seed(self.seed)
-            np.random.shuffle(indices)
-            split_at = int(self.test_frac*nentries)
-            ind_train, ind_test = indices[split_at:], indices[:split_at]
+            # get the training and test set indices, based on event number
+            test_condition = '{} % {} == {}'.format(defs.event_number, self.n_div, self.n_rmd)
+            is_test = self.df[dataset]['full'].eval(test_condition)
+            ind_test = is_test.loc[is_test == True].index
+            ind_train = is_test.loc[is_test == False].index
 
             # split
             self.df[dataset]['train'] = self.df[dataset]['full'].iloc[ind_train]

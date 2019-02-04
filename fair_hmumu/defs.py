@@ -3,6 +3,7 @@
 target = 'IsSignal'
 mass = 'Muons_Minv_MuMu'
 weight = 'GlobalWeight'
+event_number = 'EventInfo_EventNumber'
 
 # channels and datasets
 jet0 = 'jet0'
