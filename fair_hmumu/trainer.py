@@ -459,7 +459,7 @@ class Predictor(Master):
     def __init__(self, run_conf):
 
         # convenience
-        run_conf.set('Training', 'entrystop', -1)
+        run_conf.set('Training', 'entrystop', 10)
         super().__init__(run_conf)
 
         # data preprocessing
