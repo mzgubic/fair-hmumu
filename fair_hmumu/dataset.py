@@ -228,5 +228,5 @@ def feature_list(collections, njet):
         for col in collections:
             add_collection(col)
 
-    return list(fset)
+    return sorted(list(fset))
 
