@@ -501,6 +501,9 @@ class Predictor(Master):
         W = np.zeros(shape=(1,1))
         data = {'X':X, 'Y':Y, 'Z':Z, 'W':W}
 
+        # preprocess the data
+        data = self.preprocess(data)
+
         # predict using the model
         pred = self.env.clf_predict(data)
 

@@ -40,8 +40,6 @@ def main():
 
         for fold_dir in os.listdir(os.path.join(args.model_path, njet)):
 
-            print(njet, fold_dir)
-
             # load the run configuration
             loc = os.path.join(args.model_path, njet, fold_dir, 'run_conf.ini')
             run_conf = configuration.Configuration(loc)
