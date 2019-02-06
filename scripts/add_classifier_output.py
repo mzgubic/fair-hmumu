@@ -23,9 +23,6 @@ def main():
     parser.add_argument('--output',
                         default='/data/atlassmallfiles/users/zgubic/hmumu/fair-hmumu/postprocessing_test/tf/test_tree.root',
                         help='Output file')
-    parser.add_argument('--ndiv',
-                        default=2,
-                        help='Number of folds')
     parser.add_argument('--tree',
                         default='DiMuonNtuple',
                         help='Name of the tree')
@@ -118,7 +115,7 @@ def main():
         out_tree.Fill()
 
         # break after 30 for now
-        if index % 1000 == 0:
+        if index % 10000 == 0:
             print('{}/{}'.format(index, in_tree.GetEntries()))
 
     # close the file
