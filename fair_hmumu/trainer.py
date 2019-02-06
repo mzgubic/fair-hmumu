@@ -22,13 +22,21 @@ class Master:
 
         # configurations
         self.loc = run_conf.loc
-        self.clf = models.Classifier(run_conf.get('Classifier'))
-        self.adv = models.Adversary.create(run_conf.get('Adversary'))
         self.run_conf = run_conf
         self.opt_conf = run_conf.get('Optimiser')
         self.trn_conf = run_conf.get('Training')
         self.bcm_conf = run_conf.get('Benchmark')
         self.plt_conf = run_conf.get('Plotting')
+
+        # models
+        clf_type = run_conf.get('Classifier', 'type')
+        adv_type = run_conf.get('Adversary', 'type')
+        njet = self.trn_conf['njet']
+        rmd = self.trn_conf['n_rmd']
+        clf_name = '{}_{}_{}'.format(clf_type, njet, rmd)
+        adv_name = '{}_{}_{}'.format(adv_type, njet, rmd)
+        self.clf = models.Classifier(clf_name, run_conf.get('Classifier'))
+        self.adv = models.Adversary.create(adv_name, run_conf.get('Adversary'))
 
         print('------------')
         print('--- Settings:')

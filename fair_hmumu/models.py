@@ -6,9 +6,9 @@ from fair_hmumu.utils import Saveable
 
 class Model(Saveable):
 
-    def __init__(self, hps):
+    def __init__(self, name, hps):
 
-        super().__init__(str(hps['type']))
+        super().__init__(name)
         self.hps = hps
 
     def __str__(self):
@@ -17,9 +17,9 @@ class Model(Saveable):
 
 class Classifier(Model):
 
-    def __init__(self, hps):
+    def __init__(self, name, hps):
 
-        super().__init__(hps)
+        super().__init__(name, hps)
         self.output = None
         self.proba = None
         self.tf_vars = None
@@ -57,14 +57,14 @@ class Classifier(Model):
 
 class Adversary(Model):
 
-    def __init__(self, hps):
+    def __init__(self, name, hps):
 
-        super().__init__(hps)
+        super().__init__(name, hps)
         self.loss = None
         self.tf_vars = None
 
     @classmethod
-    def create(cls, hps):
+    def create(cls, name, hps):
 
         type_map = {None:DummyAdversary,
                     'GaussMixNLL':GaussMixNLLAdversary}
@@ -72,7 +72,7 @@ class Adversary(Model):
         if hps['type'] not in type_map:
             raise ValueError('Unknown Adversary type {}.'.format(hps['type']))
 
-        return type_map[hps['type']](hps)
+        return type_map[hps['type']](name, hps)
 
 class DummyAdversary(Adversary):
 
@@ -86,7 +86,7 @@ class DummyAdversary(Adversary):
 
 class GaussMixNLLAdversary(Adversary):
 
-    def __init__(self, hps):
+    def __init__(self, name, hps):
 
         super().__init__(hps)
         self.proba = None
