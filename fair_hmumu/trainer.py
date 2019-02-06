@@ -493,13 +493,19 @@ class Predictor(Master):
         path = os.path.join(self.loc, 'QuantileTransform.pkl')
         self.out_tsf = OutputTransformer.from_file(path)
 
-    def predict(self, data):
+    def predict(self, X):
+
+        # make dummy data for the feed dict
+        Y = np.zeros(shape=(1,1))
+        Z = np.zeros(shape=(1,1))
+        W = np.zeros(shape=(1,1))
+        data = {'X':X, 'Y':Y, 'Z':Z, 'W':W}
 
         # predict using the model
         pred = self.env.clf_predict(data)
 
         # transform the output
-        output = self.out_tsf(pred)
+        output = self.out_tsf.transform(pred)
 
         return output
 
