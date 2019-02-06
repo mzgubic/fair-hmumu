@@ -21,7 +21,7 @@ def main():
                         default='/data/atlassmallfiles/users/zgubic/hmumu/fair-hmumu/postprocessing_test/xgb/mc16a.345097/group.phys-higgs.15906089._000001.di_muon_ntuple__all_events.root',
                         help='Input file')
     parser.add_argument('--output',
-                        default='/data/atlassmallfiles/users/zgubic/hmumu/fair-hmumu/postprocessing_test/tf/test_tree.root',
+                        default='/data/atlassmallfiles/users/zgubic/hmumu/fair-hmumu/postprocessing_test/test_tree.root',
                         help='Output file')
     parser.add_argument('--tree',
                         default='DiMuonNtuple',
