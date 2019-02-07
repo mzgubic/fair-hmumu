@@ -408,7 +408,7 @@ class Trainer(Master):
     def _train_output_transform(self):
 
         # transform prediction to a uniform distribution
-        predictions = self.env.clf_predict(self._ds['ss'])
+        predictions = self.env.clf_predict(self._ds['train'])
 
         # train on the spurious signal events as they are the most abundant
         self.out_tsf = OutputTransformer(n_quantiles=1000, output_distribution='uniform')

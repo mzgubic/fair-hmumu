@@ -102,6 +102,11 @@ def main():
                     value = entry.Muons_PT_Lead / entry.Muons_Minv_MuMu
                 elif feature == 'Muons_PTM_Sub':
                     value = entry.Muons_PT_Sub / entry.Muons_Minv_MuMu
+                elif feature == 'Z_PTM':
+                    value = entry.Z_PT / entry.Muons_Minv_MuMu
+                else:
+                    raise AttributeError
+
                 X[0, i] = value
 
         # predict the value of the DNN using the right model
@@ -112,14 +117,13 @@ def main():
         # fill the tree
         out_tree.Fill()
 
-        # break after 30 for now
+        # report progress
         if index % 10000 == 0:
             print('{}/{}'.format(index, in_tree.GetEntries()))
 
     # close the file
     out_file.Write()
     out_file.Close()
-
 
 
 if __name__ == '__main__':
