@@ -72,7 +72,9 @@ class Adversary(Model):
         if hps['type'] not in type_map:
             raise ValueError('Unknown Adversary type {}.'.format(hps['type']))
 
-        return type_map[hps['type']](name, hps)
+        adversary = type_map[hps['type']]
+
+        return adversary(name, hps)
 
 class DummyAdversary(Adversary):
 
@@ -88,7 +90,7 @@ class GaussMixNLLAdversary(Adversary):
 
     def __init__(self, name, hps):
 
-        super().__init__(hps)
+        super().__init__(name, hps)
         self.proba = None
         self.sensitive = None
         self.nll_pars = None
