@@ -174,7 +174,7 @@ def read_results(sweepname):
     sweep_conf = Configuration(os.path.join(sweep_loc, 'sweep_conf.ini'))
     sweep_dict = sweep_conf.as_dict()
     options = ['{}__{}'.format(section, option) for section in sweep_dict for option in sweep_dict[section]]
-    scores = [fname.split('.')[0] for fname in os.listdir(os.path.join(points_loc, 'run0000')) if fname.startswith('metric')]
+    scores = [fname.split('.')[0] for fname in os.listdir(os.path.join(points_loc, 'run0000')) if fname.startswith('metric__')]
     metrics = list(set([score.split('__')[-1] for score in scores]))
     results = pd.DataFrame(columns=options+scores)
 
@@ -186,11 +186,13 @@ def read_results(sweepname):
         # see if the particular run has finished
         try:
             for score in scores:
-                with open(os.path.join(points_loc, run, '{}.txt'.format(score)), 'r') as f:
+                score_path = os.path.join(points_loc, run, '{}.txt'.format(score))
+                with open(score_path, 'r') as f:
                     point_dict[score.replace('metric__', '')] = float(f.read())
 
         # ignore if not
         except FileNotFoundError:
+            print('{} not found.'.format(score_path))
             continue
 
         results = results.append(point_dict, ignore_index=True)
