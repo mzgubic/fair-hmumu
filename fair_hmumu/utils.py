@@ -63,7 +63,7 @@ def send_job(job_path):
         f.write('output         = {}/$(ClusterId).out\n'.format(job_dir))
         f.write('error          = {}/$(ClusterId).err\n'.format(job_dir))
         f.write('log            = {}/$(ClusterId).log\n'.format(job_dir))
-        f.write('request_memory = 10 GB\n')
+        f.write('request_memory = 16 GB\n')
         f.write('stream_output  = True\n')
         f.write('stream_error   = True\n')
         f.write('queue\n')
