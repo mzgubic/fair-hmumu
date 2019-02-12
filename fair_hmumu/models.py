@@ -67,7 +67,8 @@ class Adversary(Model):
     def create(cls, name, hps):
 
         type_map = {None:DummyAdversary,
-                    'GaussMixNLL':GaussMixNLLAdversary}
+                    'GaussMixNLL':GaussMixNLLAdversary,
+                    'ExpoGaussNLL':ExpoGaussNLLAdversary}
 
         if hps['type'] not in type_map:
             raise ValueError('Unknown Adversary type {}.'.format(hps['type']))
@@ -75,6 +76,7 @@ class Adversary(Model):
         adversary = type_map[hps['type']]
 
         return adversary(name, hps)
+
 
 class DummyAdversary(Adversary):
 
@@ -85,6 +87,83 @@ class DummyAdversary(Adversary):
             self.loss = tf.math.abs(dummy_var) # i.e. goes to zero
 
         self.tf_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name)
+
+
+class ExpoGaussNLLAdversary(Adversary):
+
+    def __init__(self, name, hps):
+
+        super().__init__(name, hps)
+        self.proba = None
+        self.sensitive = None
+        self.nll_pars = None
+        self.nll = None
+
+    def make_loss(self, proba, sensitive):
+
+        # store the input placeholders
+        self.proba = proba
+        self.sensitive = sensitive
+
+        # nll network
+        self._make_nll()
+
+        # nll loss
+        self._make_loss()
+
+    def _make_nll(self):
+
+        with tf.variable_scope(self.name):
+
+            # input layer
+            layer = self.proba
+
+            # define the output of a network (depends on number of components)
+            for _ in range(self.hps['depth']):
+                layer = layers.relu(layer, self.hps['n_units'])
+
+            # output layer: (amplitude, rate) for expo, (mu, sigma, amplitude) for gauss
+            output = layers.linear(layer, 5)
+
+            # make sure amplitudes (pi) are normalised, and sigmas are positive
+            pi = tf.nn.softmax(output[:, 0:2])
+            #rate = tf.reshape(tf.sigmoid(output[:, 2]), shape=(-1, 1))
+            rate = tf.reshape(tf.sigmoid(output[:, 2]), shape=(-1, 1))
+            mu = tf.reshape(output[:, 3], shape=(-1, 1))
+            sigma = tf.reshape(tf.exp(output[:, 4]), shape=(-1, 1))
+
+            # interpret the output layers as nll parameters
+            self.nll_pars = tf.concat([pi, rate, mu, sigma], axis=1)
+
+        self.tf_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name)
+
+    def _make_loss(self):
+
+        # get parameters of the nll
+        pi_exp = self.nll_pars[:, 0]
+        pi_gauss = self.nll_pars[:, 1]
+        rate = self.nll_pars[:, 2]
+        mu = self.nll_pars[:, 3]
+        sigma = self.nll_pars[:, 4]
+
+        # get the mass (x value)
+        mass = tf.reshape(self.sensitive, shape=[-1]) / 100.
+
+        # exponential part
+        expo_part = pi_exp * rate * tf.math.exp(-rate * mass)
+
+        # gaussian part
+        normalisation = pi_gauss * (1. / np.sqrt(2. * np.pi)) / sigma
+        exp = tf.math.exp(-(mass - mu) ** 2 / (2. * sigma ** 2))
+        gauss_part = normalisation * exp
+        
+        # build the likelihood
+        likelihood = expo_part + gauss_part
+
+        # make the loss
+        self.nll = - tf.math.log(likelihood)
+        self.loss = tf.reduce_mean(self.nll)
+
 
 class GaussMixNLLAdversary(Adversary):
 
