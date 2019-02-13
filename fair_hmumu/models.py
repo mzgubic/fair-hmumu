@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+import tensorflow_probability.distributions as tfd
 from tensorflow.contrib import layers
 from fair_hmumu.utils import Saveable
 
@@ -39,6 +40,60 @@ class Classifier(Model):
 
             # output layer
             self.output = layers.linear(layer, self.hps['n_classes'])
+
+            # and an extra layer for getting the predictions directly
+            self.proba = tf.reshape(layers.softmax(self.output)[:, 1], shape=(-1, 1))
+
+        self.tf_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name)
+
+    def make_loss(self, target):
+
+        # build the graph
+        one_hot = tf.one_hot(target, depth=self.hps['n_classes'])
+
+        # loss
+        loss = tf.nn.softmax_cross_entropy_with_logits_v2(labels=one_hot, logits=self.output)
+        self.loss = tf.math.reduce_mean(loss)
+
+
+class ProbaClassifier(Model):
+
+    def __init__(self, name, hps):
+
+        super().__init__(name, hps)
+        self.output = None
+        self.proba = None
+        self.tf_vars = None
+        self.loss = None
+
+    def make_forward_pass(self, input_layer):
+
+        # useful numbers
+        depth = int(self.hps['depth'])
+        n_units = int(self.hps['n_units'])
+        n_components = int(self.hps['n_components'])
+
+        # use the scope, Luke
+        with tf.variable_scope(self.name):
+            
+            # input layer
+            layer = input_layer
+
+            # hidden layers
+            for _ in range(depth):
+                layer = layers.relu(layer, n_units)
+
+            # N components gaussian mix parameters
+            pdf_pars = layers.linear(layer, 3*n_components)
+            pi = tf.nn.softmax(pdf_pars[:, :n_components])
+            mu = pdf_pars[:, n_components:2*n_components]
+            sigma = tf.exp(pdf_pars[:, 2*n_components:])
+
+            # sample the output from the probability density function
+            fractions = tfd.Categorical(pi)
+            normals = tfd.Normal(mu, sigma)
+            mixture = tfd.Mixture(cat=fractions, components=normals)
+            self.output = 0 # TODO
 
             # and an extra layer for getting the predictions directly
             self.proba = tf.reshape(layers.softmax(self.output)[:, 1], shape=(-1, 1))
