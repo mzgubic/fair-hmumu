@@ -35,7 +35,7 @@ class Master:
         rmd = self.trn_conf['n_rmd']
         clf_name = '{}_{}_{}'.format(clf_type, njet, rmd)
         adv_name = '{}_{}_{}'.format(adv_type, njet, rmd)
-        self.clf = models.Classifier(clf_name, run_conf.get('Classifier'))
+        self.clf = models.Classifier.create(clf_name, run_conf.get('Classifier'))
         self.adv = models.Adversary.create(adv_name, run_conf.get('Adversary'))
 
         print('------------')

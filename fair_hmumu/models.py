@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
-import tensorflow_probability.distributions as tfd
+#import tensorflow_probability as tfp
+#tfd = tfp.distributions
 from tensorflow.contrib import layers
 from fair_hmumu.utils import Saveable
 
@@ -21,10 +22,36 @@ class Classifier(Model):
     def __init__(self, name, hps):
 
         super().__init__(name, hps)
-        self.output = None
+        self.logits = None
         self.proba = None
         self.tf_vars = None
         self.loss = None
+
+    @classmethod
+    def create(cls, name, hps):
+
+        type_map = {'DNN':DeterministicClassifier,
+                    'DeterministicClassifier':DeterministicClassifier,
+                    'ProbabilisticClassifier':ProbabilisticClassifier}
+
+        if hps['type'] not in type_map:
+            raise ValueError('Unknown Adversary type {}.'.format(hps['type']))
+
+        classifier = type_map[hps['type']]
+
+        return classifier(name, hps)
+
+    def make_loss(self, target):
+
+        # build the graph
+        one_hot = tf.one_hot(target, depth=self.hps['n_classes'])
+
+        # loss
+        loss = tf.nn.softmax_cross_entropy_with_logits_v2(labels=one_hot, logits=self.logits)
+        self.loss = tf.math.reduce_mean(loss)
+
+
+class DeterministicClassifier(Classifier):
 
     def make_forward_pass(self, input_layer):
 
@@ -39,32 +66,15 @@ class Classifier(Model):
                 layer = layers.relu(layer, int(self.hps['n_units']))
 
             # output layer
-            self.output = layers.linear(layer, self.hps['n_classes'])
+            self.logits = layers.linear(layer, self.hps['n_classes'])
 
             # and an extra layer for getting the predictions directly
-            self.proba = tf.reshape(layers.softmax(self.output)[:, 1], shape=(-1, 1))
+            self.proba = tf.reshape(layers.softmax(self.logits)[:, 1], shape=(-1, 1))
 
         self.tf_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name)
 
-    def make_loss(self, target):
 
-        # build the graph
-        one_hot = tf.one_hot(target, depth=self.hps['n_classes'])
-
-        # loss
-        loss = tf.nn.softmax_cross_entropy_with_logits_v2(labels=one_hot, logits=self.output)
-        self.loss = tf.math.reduce_mean(loss)
-
-
-class ProbaClassifier(Model):
-
-    def __init__(self, name, hps):
-
-        super().__init__(name, hps)
-        self.output = None
-        self.proba = None
-        self.tf_vars = None
-        self.loss = None
+class ProbabilisticClassifier(Classifier):
 
     def make_forward_pass(self, input_layer):
 
@@ -93,21 +103,12 @@ class ProbaClassifier(Model):
             fractions = tfd.Categorical(pi)
             normals = tfd.Normal(mu, sigma)
             mixture = tfd.Mixture(cat=fractions, components=normals)
-            self.output = 0 # TODO
+            self.logits = 0 # TODO
 
             # and an extra layer for getting the predictions directly
-            self.proba = tf.reshape(layers.softmax(self.output)[:, 1], shape=(-1, 1))
+            self.proba = tf.reshape(layers.softmax(self.logits)[:, 1], shape=(-1, 1))
 
         self.tf_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name)
-
-    def make_loss(self, target):
-
-        # build the graph
-        one_hot = tf.one_hot(target, depth=self.hps['n_classes'])
-
-        # loss
-        loss = tf.nn.softmax_cross_entropy_with_logits_v2(labels=one_hot, logits=self.output)
-        self.loss = tf.math.reduce_mean(loss)
 
 
 class Adversary(Model):
