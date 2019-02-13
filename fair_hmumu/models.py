@@ -68,7 +68,8 @@ class Adversary(Model):
 
         type_map = {None:DummyAdversary,
                     'GaussMixNLL':GaussMixNLLAdversary,
-                    'ExpoGaussNLL':ExpoGaussNLLAdversary}
+                    'ExpoGaussNLL':ExpoGaussNLLAdversary,
+                    'MINE':MINEAdversary}
 
         if hps['type'] not in type_map:
             raise ValueError('Unknown Adversary type {}.'.format(hps['type']))
@@ -127,7 +128,6 @@ class ExpoGaussNLLAdversary(Adversary):
 
             # make sure amplitudes (pi) are normalised, and sigmas are positive
             pi = tf.nn.softmax(output[:, 0:2])
-            #rate = tf.reshape(tf.sigmoid(output[:, 2]), shape=(-1, 1))
             rate = tf.reshape(tf.sigmoid(output[:, 2]), shape=(-1, 1))
             mu = tf.reshape(output[:, 3], shape=(-1, 1))
             sigma = tf.reshape(tf.exp(output[:, 4]), shape=(-1, 1))
@@ -242,5 +242,54 @@ class GaussMixNLLAdversary(Adversary):
         self.nll = - tf.math.log(likelihood)
         self.loss = tf.reduce_mean(self.nll)
 
+
+class MINEAdversary(Adversary):
+
+    def __init__(self, name, hps):
+
+        super().__init__(name, hps)
+        self.proba = None
+        self.sensitive = None
+
+    def make_loss(self, proba, sensitive):
+
+        # store the input placeholders
+        self.proba = tf.reshape(proba, shape=(-1, 1))
+        self.sensitive = tf.reshape(sensitive, shape=(-1, 1))
+
+        # aliases
+        x_in = self.proba
+        y_in = self.sensitive
+        depth = self.hps['depth']
+        n_units = self.hps['n_units']
+
+        # use scope to keep track of vars
+        with tf.variable_scope(self.name):
+            
+            # shuffle one of them
+            y_shuffle = tf.random_shuffle(y_in)
+            x_conc = tf.concat([x_in, x_in], axis=0)
+            y_conc = tf.concat([y_in, y_shuffle], axis=0)
+
+            # compute the forward pass
+            layer_x = layers.linear(x_conc, n_units)
+            layer_y = layers.linear(y_conc, n_units)
+            layer = tf.nn.relu(layer_x + layer_y)
+
+            for _ in range(depth):
+                layer = layers.relu(layer, n_units)
+
+            output = layers.linear(layer, 1)
+
+            # split in T_xy and T_x_y
+            N_batch = tf.shape(x_in)[0]
+            T_xy = output[:N_batch]
+            T_x_y = output[N_batch:]
+
+            # compute the loss
+            self.loss = - (tf.reduce_mean(T_xy, axis=0) - tf.math.log(tf.reduce_mean(tf.math.exp(T_x_y), axis=0)))
+
+        # save variables
+        self.tf_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name)
 
 
