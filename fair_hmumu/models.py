@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
-#import tensorflow_probability as tfp
-#tfd = tfp.distributions
+import tensorflow_probability as tfp
+tfd = tfp.distributions
 from tensorflow.contrib import layers
 from fair_hmumu.utils import Saveable
 
@@ -44,7 +44,7 @@ class Classifier(Model):
     def make_loss(self, target):
 
         # build the graph
-        one_hot = tf.one_hot(target, depth=self.hps['n_classes'])
+        one_hot = tf.one_hot(tf.reshape(target, shape=[-1]), depth=self.hps['n_classes'])
 
         # loss
         loss = tf.nn.softmax_cross_entropy_with_logits_v2(labels=one_hot, logits=self.logits)
@@ -95,18 +95,20 @@ class ProbabilisticClassifier(Classifier):
 
             # N components gaussian mix parameters
             pdf_pars = layers.linear(layer, 3*n_components)
+
             pi = tf.nn.softmax(pdf_pars[:, :n_components])
             mu = pdf_pars[:, n_components:2*n_components]
             sigma = tf.exp(pdf_pars[:, 2*n_components:])
 
             # sample the output from the probability density function
-            fractions = tfd.Categorical(pi)
-            normals = tfd.Normal(mu, sigma)
+            fractions = tfd.Categorical(probs=pi)
+            normals = [tfd.Normal(loc=mu[:, i], scale=sigma[:, i]) for i in range(n_components)]
             mixture = tfd.Mixture(cat=fractions, components=normals)
-            self.logits = 0 # TODO
 
-            # and an extra layer for getting the predictions directly
-            self.proba = tf.reshape(layers.softmax(self.logits)[:, 1], shape=(-1, 1))
+            # prepare logits and probabilities
+            sample = tf.reshape(mixture.sample(), shape=(-1, 1))
+            self.proba = tf.math.sigmoid(sample)
+            self.logits = tf.concat([1-self.proba, self.proba], axis=1)
 
         self.tf_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name)
 
