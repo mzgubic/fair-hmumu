@@ -31,8 +31,7 @@ class Classifier(Model):
     def create(cls, name, hps):
 
         type_map = {'DNN':DeterministicClassifier,
-                    'DeterministicClassifier':DeterministicClassifier,
-                    'ProbabilisticClassifier':ProbabilisticClassifier}
+                    'ProbabilisticDNN':ProbabilisticClassifier}
 
         if hps['type'] not in type_map:
             raise ValueError('Unknown Adversary type {}.'.format(hps['type']))
