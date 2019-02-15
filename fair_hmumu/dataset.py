@@ -217,7 +217,7 @@ def feature_list(collections, njet):
                 fset.add(var)
 
         if njet == defs.jet2:
-            for var in sub_jet + dijet:
+            for var in lead_jet + sub_jet + dijet:
                 fset.add(var)
     
     # actually
