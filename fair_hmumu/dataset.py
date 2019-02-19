@@ -20,6 +20,7 @@ class DatasetHandler:
         """
 
         # general settings
+        self.trn_conf = trn_conf
         self.production = trn_conf['production']
         self.loc = os.path.join(os.getenv('DATA'), self.production)
         self.njet = trn_conf['njet']
@@ -93,6 +94,30 @@ class DatasetHandler:
 
         return {'X':X, 'Y':Y, 'Z':Z, 'W':W}
 
+    def _augment(self, data):
+
+        # determine how many
+        N = data.shape[0] * self.trn_conf['augment'] 
+        sample = data.iloc[np.random.randint(data.shape[0], size=N)]
+        rotate_by = np.random.uniform(2*np.pi, size=N)
+
+        for feature in sample.columns.values:
+
+            if 'Phi' not in feature:
+                continue
+
+            # rotate the phi variable
+            new_phi = sample[feature] + rotate_by
+
+            # make sure it is in the correct range
+            # np.where(cond, value) assigns value where cond is False
+            new_phi = new_phi.where(new_phi < np.pi, new_phi - 2*np.pi)
+
+            # and replace the old phi values by rotated ones
+            sample[feature] = new_phi
+
+        return sample
+
     @timeit
     def get_train(self, features):
         """
@@ -109,6 +134,13 @@ class DatasetHandler:
         result = result.sample(frac=1, random_state=self.seed).reset_index(drop=True)
 
         print('({} events)'.format(result.shape[0]))
+
+        # augment if asked
+        try:
+            if self.trn_conf['augment'] > 0:
+                result = self._augment(result)
+        except:
+            pass
 
         return self._xyzw(result, features)
 

@@ -182,7 +182,7 @@ def roc_curve(plot_setups, run_conf, loc, unique_id, zoom=True):
 
         # add ROC AUC score
         x = 0.975 if zoom else 0.5
-        ax.text(x, y0-dy*(i+1), '{}: {:2.2f}'.format(setup['label'], setup['score'].roc_auc))
+        ax.text(x, y0-dy*(i+1), '{}: {:2.3f}'.format(setup['label'], setup['score'].roc_auc))
 
     # add run conf text
     write_conf_info(ax, run_conf)
