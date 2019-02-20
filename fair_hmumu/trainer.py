@@ -176,13 +176,18 @@ class Trainer(Master):
         # instantiate the model
         if self.bcm_conf['type'] == 'GBC':
             self.bcm = GradientBoostingClassifier(**bcm_hps)
+
         if self.bcm_conf['type'] == 'XGB':
             self.bcm = XGBClassifier(**bcm_hps)
 
         # training set is very unbalanced, fit without the weights
         # do not apply preprocessing to the benchmark
         train = self.dh.get_train(self.bcm_features)
-        self.bcm.fit(train['X'], train['Y'].ravel())
+        test = self.dh.get_test(self.bcm_features)
+        eval_set = [(test['X'], test['Y'].ravel())]
+
+        # fit the model
+        self.bcm.fit(train['X'], train['Y'].ravel(), eval_set=eval_set, verbose=True, early_stopping_rounds=10)
 
     @timeit
     def _predict_benchmarks(self):
