@@ -97,7 +97,7 @@ class DatasetHandler:
     def _augment(self, data):
 
         # determine how many
-        N = data.shape[0] * self.trn_conf['augment'] 
+        N = int(data.shape[0] * self.trn_conf['augment'])
         sample = data.iloc[np.random.randint(data.shape[0], size=N)]
         rotate_by = np.random.uniform(2*np.pi, size=N)
 
@@ -139,7 +139,7 @@ class DatasetHandler:
         try:
             if self.trn_conf['augment'] > 0:
                 result = self._augment(result)
-        except:
+        except KeyError:
             pass
 
         return self._xyzw(result, features)
