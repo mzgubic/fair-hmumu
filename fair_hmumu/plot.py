@@ -401,6 +401,8 @@ def metric_vs_parameter(metric, parameter, results, loc):
         if max(xs)/min(xs) > 100:
             ax.set_xscale('log')
             ax.set_xlim(0.8*min(xs), max(xs)*1.2)
+    except ZeroDivisionError:
+        pass
     except TypeError: # if string
         pass
     ax.set_xlabel(parameter)

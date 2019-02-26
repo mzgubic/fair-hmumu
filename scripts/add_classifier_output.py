@@ -15,7 +15,7 @@ def main():
     # parse args
     parser = argparse.ArgumentParser(description='ArgParser')
     parser.add_argument('-m', '--model-path',
-                        default='/data/atlassmallfiles/users/zgubic/hmumu/fair-hmumu/models/test1',
+                        default='/data/atlassmallfiles/users/zgubic/hmumu/fair-hmumu/models/test3',
                         help='Path to the models')
     parser.add_argument('--input',
                         default='/data/atlassmallfiles/users/zgubic/hmumu/fair-hmumu/postprocessing_test/xgb/mc16a.345097/group.phys-higgs.15906089._000001.di_muon_ntuple__all_events.root',
