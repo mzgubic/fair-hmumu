@@ -67,7 +67,7 @@ def main():
 
     # add new branch
     dnn_var = array.array('f', [0])
-    dnn_branch = out_tree.Branch('DNN', dnn_var, 'DNN/F')
+    dnn_branch = out_tree.Branch('ClassOut_DNN', dnn_var, 'ClassOut_DNN/F')
 
     ##################
     # loop over the tree
